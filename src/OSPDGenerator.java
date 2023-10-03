@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class OSPDGenerator {
-    static Pair<Double, Set<DualEdge>> generationBasedMinimalConversion(DirectedAcyclicGraph<Integer, DualEdge> dag) {
+    static Pair<Double, Set<DualEdge>> generateOSPD(DirectedAcyclicGraph<Integer, DualEdge> dag) {
         Set<GraphPath<Integer, DualEdge>> candidatePaths = OSPDUtils.getMinimalProblematicPaths(dag);
         List<Set<DualEdge>> edgeSets = candidatePaths.stream().map(p -> new HashSet<DualEdge>(p.getEdgeList())).collect(Collectors.toList());
         Set<List<DualEdge>> cp = Sets.cartesianProduct(edgeSets);
