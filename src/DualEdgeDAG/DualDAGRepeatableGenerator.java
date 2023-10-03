@@ -52,7 +52,7 @@ public class DualDAGRepeatableGenerator<V> {
                 DualEdge newEdge = graph.addEdge(vertices.get(fromVertexId), vertices.get(toVertexId));
                 if (newEdge != null) {
                     graph.setEdgeWeight(newEdge, this.randomizer.nextDouble() * 10.0);
-                    newEdge.setBlocking(randomizer.nextDouble() < pBEdge);
+                    newEdge.setBlkOrMat(randomizer.nextDouble() < pBEdge);
                 }
             } catch (IllegalArgumentException e) {
                 // okay, that's fine; omit cycle

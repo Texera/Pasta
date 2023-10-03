@@ -43,7 +43,7 @@ public class DualDAGImageRenderer {
         DecimalFormat df = new DecimalFormat("#.#");
 
         for (DualEdge edge : dag.edgeSet()) {
-            if (edge.isBlocking()) {
+            if (edge.isBlkOrMat()) {
                 edgeToCellMap.get(edge).setStyle("strokeColor=#CCCC00");
             }
             edgeToCellMap.get(edge).setValue(df.format(dag.getEdgeWeight(edge)));

@@ -3,27 +3,27 @@ package DualEdgeDAG;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 public class DualEdge extends DefaultWeightedEdge {
-    private boolean isBlocking;
+    private boolean blkOrMat;
 
     public DualEdge() {
-        this.isBlocking = false;
+        this.blkOrMat = false;
     }
 
-    public DualEdge(boolean isBlocking) {
-        this.isBlocking = isBlocking;
+    public DualEdge(boolean blkOrMat) {
+        this.blkOrMat = blkOrMat;
     }
 
-    public boolean isBlocking() {
-        return isBlocking;
+    public boolean isBlkOrMat() {
+        return blkOrMat;
     }
 
-    public void setBlocking(boolean blocking) {
-        isBlocking = blocking;
+    public void setBlkOrMat(boolean blkOrMat) {
+        this.blkOrMat = blkOrMat;
     }
 
     @Override
     public String toString() {
-        return "(" + this.getSource() + (isBlocking ? " : " : " -> ") + this.getTarget() + ")";
+        return "(" + this.getSource() + (blkOrMat ? " : " : " -> ") + this.getTarget() + ")";
     }
 
     public Object getSource() {
