@@ -1,6 +1,7 @@
 import DualEdgeDAG.DualDAGImageRenderer;
 import DualEdgeDAG.DualDAGRepeatableGenerator;
 import DualEdgeDAG.DualEdge;
+import PhysicalDAG.SchedulabilityChecker;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.util.SupplierUtil;
 
@@ -43,7 +44,7 @@ public class Main {
         graphGenerator.generateDualGraph(dag);
         DualDAGImageRenderer.renderDualDAG(dag, numVertices, numEdges, seed, pBEdge, forceChain, pForceChain);
 
-        boolean schedulable = DDAGSchedulerSolver.testIfSchedulable(dag, false);
+        boolean schedulable = SchedulabilityChecker.checkPhysicalDAGSchedulability(dag, false);
         System.out.println("Is the generated DAG schedulable?: " + schedulable);
         if (!schedulable) {
             // Search-based algorithm
