@@ -11,6 +11,10 @@ import java.util.stream.Stream;
 
 public class OSPDUtils {
 
+    static Double getCost(Set<DualEdge> currentState) {
+        return currentState.stream().map(DualEdge::getWeight).reduce(0.0, Double::sum);
+    }
+
     static Set<GraphPath<Integer, DualEdge>> getChainPaths(DirectedAcyclicGraph<Integer, DualEdge> dag) {
         AllDirectedPaths<Integer, DualEdge> dijkstra = new AllDirectedPaths<Integer, DualEdge>(dag);
         Set<GraphPath<Integer, DualEdge>> cpaths = new HashSet<GraphPath<Integer, DualEdge>>();
@@ -54,10 +58,6 @@ public class OSPDUtils {
             }
         }
         return blockedVertices;
-    }
-
-    static Double getCost(Set<DualEdge> currentState) {
-        return currentState.stream().map(DualEdge::getWeight).reduce(0.0, Double::sum);
     }
 
     static boolean testStateValidity(DirectedAcyclicGraph<Integer, DualEdge> dag, Set<DualEdge> currentState) {

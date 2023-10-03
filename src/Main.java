@@ -48,7 +48,7 @@ public class Main {
         System.out.println("Is the generated DAG schedulable?: " + schedulable);
         if (!schedulable) {
             // Search-based algorithm
-            System.out.println("Result of search-based algorithm: " + OSPDSearcher.searchBasedMinimalConversion(dag));
+            System.out.println("Result of search-based algorithm: " + OSPDSearcherOld.searchBasedMinimalConversion(dag));
             // Generation-based algorithm
             System.out.println("Result of generation-based algorithm: " + OSPDGenerator.generationBasedMinimalConversion(dag));
         }

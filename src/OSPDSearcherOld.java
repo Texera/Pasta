@@ -10,7 +10,7 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class OSPDSearcher {
+public class OSPDSearcherOld {
     static Pair<Double, Set<DualEdge>> searchBasedMinimalConversion(DirectedAcyclicGraph<Integer, DualEdge> dag) {
         Set<DualEdge> pipelinedEdges = dag.edgeSet().stream().filter(e -> !e.isBlkOrMat()).collect(Collectors.toSet());
         BigDecimal spaceSize = BigDecimal.valueOf((1L << pipelinedEdges.size()));
