@@ -37,4 +37,12 @@ public class DualEdge extends DefaultWeightedEdge {
     public double getWeight() {
         return super.getWeight();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DualEdge)) return false;
+        DualEdge dualEdge = (DualEdge) o;
+        return getSource().equals(((DualEdge) o).getSource()) && getTarget().equals(((DualEdge) o).getTarget()) && isBlkOrMat() == dualEdge.isBlkOrMat();
+    }
 }

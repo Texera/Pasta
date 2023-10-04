@@ -68,10 +68,11 @@ public class SchedulabilityChecker {
         CycleDetector<Integer, DualEdge> regionCycleDetector = new CycleDetector(regionGraph);
         boolean schedulable = !regionCycleDetector.detectCycles();
         if (printState) {
-            System.out.println("Input DAG is: " + physicalDAG);
+            System.out.println("Showing this physical-DAG's schedulability below:");
+            System.out.println("Input P-DAG is: " + physicalDAG);
             System.out.println("Regions are: " + regions);
             System.out.println("Region graph is: " + regionGraph);
-            System.out.println("Input DAG's schedulability: " + schedulable);
+            System.out.println("Input P-DAG's schedulability: " + schedulable);
         }
 
         return schedulable;

@@ -1,7 +1,7 @@
 import DualEdgeDAG.DualDAGImageRenderer;
 import DualEdgeDAG.DualDAGRepeatableGenerator;
 import DualEdgeDAG.DualEdge;
-import PhysicalDAG.SchedulabilityChecker;
+import LogicalDAG.LogicalDAG;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.util.SupplierUtil;
 
@@ -9,7 +9,7 @@ import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        DirectedAcyclicGraph<Integer, DualEdge> dag = new DirectedAcyclicGraph<>(
+        DirectedAcyclicGraph<Integer, DualEdge> randomDAGWithCost = new DirectedAcyclicGraph<>(
                 SupplierUtil.createIntegerSupplier(), DualEdge::new, true);
         int numVertices = 0, numEdges = 0, seed = 0;
         double pBEdge = 0, pForceChain = 0;
@@ -41,16 +41,20 @@ public class Main {
             }
         }
         DualDAGRepeatableGenerator<Integer> graphGenerator = new DualDAGRepeatableGenerator<>(numVertices, numEdges, seed, pBEdge, forceChain, pForceChain);
-        graphGenerator.generateDualGraph(dag);
-        DualDAGImageRenderer.renderDualDAG(dag, numVertices, numEdges, seed, pBEdge, forceChain, pForceChain);
+        graphGenerator.generateDualGraph(randomDAGWithCost);
+        DualDAGImageRenderer.renderDualDAG(randomDAGWithCost, numVertices, numEdges, seed, pBEdge, forceChain, pForceChain);
 
-        boolean schedulable = SchedulabilityChecker.checkPhysicalDAGSchedulability(dag, false);
-        System.out.println("Is the generated DAG schedulable?: " + schedulable);
-        if (!schedulable) {
-            // Search-based algorithm
-            System.out.println("Result of search-based algorithm: " + OSPDSearcherOld.searchOSPD(dag));
-            // Generation-based algorithm
-            System.out.println("Result of generation-based algorithm: " + OSPDGenerator.generateOSPD(dag));
-        }
+//        boolean schedulable = SchedulabilityChecker.checkPhysicalDAGSchedulability(randomDAGWithCost, false);
+//        System.out.println("Is the generated DAG schedulable?: " + schedulable);
+//        if (!schedulable) {
+//            // Search-based algorithm
+//            System.out.println("Result of search-based algorithm: " + OSPDSearcherOld.searchOSPD(randomDAGWithCost));
+//            // Generation-based algorithm
+//            System.out.println("Result of generation-based algorithm: " + OSPDGenerator.generateOSPD(randomDAGWithCost));
+//        }
+
+        LogicalDAG logicalDAG = new LogicalDAG(randomDAGWithCost);
+        OSPDSearcher ospdSearcher = new OSPDSearcher(logicalDAG);
+        ospdSearcher.execute();
     }
 }
