@@ -1,6 +1,8 @@
 package LogicalDAG;
 
+import DualEdgeDAG.DualDAGImageRenderer;
 import DualEdgeDAG.DualEdge;
+import org.jgrapht.ext.JGraphXAdapter;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import java.util.Objects;
@@ -30,6 +32,12 @@ public class LogicalDAG {
 
     public boolean isBlockingEdge(Integer fromVertex, Integer toVertex) {
         return this.blockingEdges.stream().anyMatch(lEdge -> lEdge.getSource().equals(fromVertex) && lEdge.getTarget().equals(toVertex));
+    }
+
+    public void renderDAGImageToPath(String path) {
+        String blockingEdgeColor = "strokeColor=#CCCC00";
+        JGraphXAdapter<Integer, DualEdge> graphAdapter = DualDAGImageRenderer.getGraphAdapter(getDualDAG(), blockingEdgeColor);
+        DualDAGImageRenderer.renderDAGToFile(path, graphAdapter);
     }
 
     @Override

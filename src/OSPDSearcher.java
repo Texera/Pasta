@@ -22,13 +22,15 @@ public class OSPDSearcher {
         this.searchSpaceSize = BigDecimal.valueOf((1L << (this.inputLogicalDAG.getDualDAG().edgeSet().size() - this.inputLogicalDAG.getBlockingEdges().size())));
     }
 
-    public void execute() {
+    public PhysicalDAG execute() {
         PhysicalDAG allNonBlockingPipelinedState = new PhysicalDAG(inputLogicalDAG, inputLogicalDAG.getBlockingEdges());
         if (allNonBlockingPipelinedState.showSchedulability()) {
+            this.OSPD = allNonBlockingPipelinedState;
             System.out.println(this.inputLogicalDAG + " is natively schedulable. Search skipped.");
         } else {
             executeSearch();
         }
+        return this.OSPD;
     }
 
     public void executeSearch() {
@@ -41,9 +43,6 @@ public class OSPDSearcher {
         this.visitedSet.add(seedState);
         while (!searchQueue.isEmpty()) {
             PhysicalDAG currentState = searchQueue.poll();
-            if (visitedSet.size() % 10000 == 0) {
-                System.out.println(visitedSet.size() + " states visited.");
-            }
             if (currentState.checkSchedulability()) {
                 if (currentState.getCost() < this.OSPD.getCost()) {
                     this.OSPD = currentState;
@@ -57,6 +56,9 @@ public class OSPDSearcher {
                     if (!visitedSet.contains(neighborState)) {
                         searchQueue.add(neighborState);
                         visitedSet.add(neighborState);
+                        if (visitedSet.size() % 10000 == 0) {
+                            System.out.println(visitedSet.size() + " states visited.");
+                        }
                     }
                 }
             });

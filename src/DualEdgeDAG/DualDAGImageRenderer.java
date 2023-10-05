@@ -19,11 +19,42 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DualDAGImageRenderer {
-    public static void renderDualDAG(DirectedAcyclicGraph<Integer, DualEdge> dag, int vertices, int edges, long seed, double pBEdge, boolean forceChain, double pForceChain) throws IOException {
+    public static void renderLogicalDAG(DirectedAcyclicGraph<Integer, DualEdge> dag, String outputPath) {
+
+    }
+
+    public static void renderDAGToFile(String outputPath, JGraphXAdapter<Integer, DualEdge> graphAdapter) {
+        BufferedImage image =
+                mxCellRenderer.createBufferedImage(graphAdapter, null, 10, Color.WHITE, true, null);
+        File imgFile = new File(outputPath);
+        try {
+            ImageIO.write(image, "PNG", imgFile);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static JGraphXAdapter<Integer, DualEdge> getGraphAdapter(DirectedAcyclicGraph<Integer, DualEdge> dag, String strokeColor) {
         JGraphXAdapter<Integer, DualEdge> graphAdapter = new JGraphXAdapter<Integer, DualEdge>(dag);
         mxIGraphLayout layout = new mxHierarchicalLayout(graphAdapter);
         layout.execute(graphAdapter.getDefaultParent());
         HashMap<DualEdge, mxICell> edgeToCellMap = graphAdapter.getEdgeToCellMap();
+        mxStylesheet stylesheet = getMxStylesheet(graphAdapter);
+
+        graphAdapter.setStylesheet(stylesheet);
+
+        DecimalFormat df = new DecimalFormat("#.#");
+
+        for (DualEdge edge : dag.edgeSet()) {
+            if (edge.isBlkOrMat()) {
+                edgeToCellMap.get(edge).setStyle(strokeColor);
+            }
+            edgeToCellMap.get(edge).setValue(df.format(dag.getEdgeWeight(edge)));
+        }
+        return graphAdapter;
+    }
+
+    public static mxStylesheet getMxStylesheet(JGraphXAdapter<Integer, DualEdge> graphAdapter) {
         mxStylesheet stylesheet = graphAdapter.getStylesheet();
         Map<String, Object> edgeStyle = stylesheet.getDefaultEdgeStyle();
         Map<String, Object> vertexStyle = stylesheet.getDefaultVertexStyle();
@@ -37,21 +68,6 @@ public class DualDAGImageRenderer {
         vertexStyle.put(mxConstants.STYLE_ROUNDED, true);
         stylesheet.setDefaultVertexStyle(vertexStyle); // Set the default style for vertices
         stylesheet.setDefaultEdgeStyle(edgeStyle); // Set the default style for edges
-
-        graphAdapter.setStylesheet(stylesheet);
-
-        DecimalFormat df = new DecimalFormat("#.#");
-
-        for (DualEdge edge : dag.edgeSet()) {
-            if (edge.isBlkOrMat()) {
-                edgeToCellMap.get(edge).setStyle("strokeColor=#CCCC00");
-            }
-            edgeToCellMap.get(edge).setValue(df.format(dag.getEdgeWeight(edge)));
-        }
-
-        BufferedImage image =
-                mxCellRenderer.createBufferedImage(graphAdapter, null, 10, Color.WHITE, true, null);
-        File imgFile = new File(String.format("/Users/xzliu/Downloads/DualDAG/v%s_e%s_s%s_pB%s_fC_%s_pFC%s.png", vertices, edges, seed, pBEdge, forceChain, pForceChain));
-        ImageIO.write(image, "PNG", imgFile);
+        return stylesheet;
     }
 }

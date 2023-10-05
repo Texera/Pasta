@@ -1,11 +1,14 @@
-import DualEdgeDAG.DualDAGImageRenderer;
 import DualEdgeDAG.DualDAGRepeatableGenerator;
 import DualEdgeDAG.DualEdge;
 import LogicalDAG.LogicalDAG;
+import PhysicalDAG.PhysicalDAG;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.util.SupplierUtil;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Main {
     public static void main(String[] args) throws IOException {
@@ -42,19 +45,19 @@ public class Main {
         }
         DualDAGRepeatableGenerator<Integer> graphGenerator = new DualDAGRepeatableGenerator<>(numVertices, numEdges, seed, pBEdge, forceChain, pForceChain);
         graphGenerator.generateDualGraph(randomDAGWithCost);
-        DualDAGImageRenderer.renderDualDAG(randomDAGWithCost, numVertices, numEdges, seed, pBEdge, forceChain, pForceChain);
-
-//        boolean schedulable = SchedulabilityChecker.checkPhysicalDAGSchedulability(randomDAGWithCost, false);
-//        System.out.println("Is the generated DAG schedulable?: " + schedulable);
-//        if (!schedulable) {
-//            // Search-based algorithm
-//            System.out.println("Result of search-based algorithm: " + OSPDSearcherOld.searchOSPD(randomDAGWithCost));
-//            // Generation-based algorithm
-//            System.out.println("Result of generation-based algorithm: " + OSPDGenerator.generateOSPD(randomDAGWithCost));
-//        }
+        Path outputPath = Paths.get(String.format("/Users/xzliu/Desktop/Experiments/v%s_e%s_s%s_pB%s_fC_%s_pFC%s", numVertices, numEdges, seed, pBEdge, forceChain, pForceChain));
+        if (!Files.exists(outputPath)) {
+            try {
+                Files.createDirectories(outputPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         LogicalDAG logicalDAG = new LogicalDAG(randomDAGWithCost);
+        logicalDAG.renderDAGImageToPath(outputPath.resolve("input_logical_DAG.png").toString());
         OSPDSearcher ospdSearcher = new OSPDSearcher(logicalDAG);
-        ospdSearcher.execute();
+        PhysicalDAG ospd = ospdSearcher.execute();
+        ospd.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG.png").toString());
     }
 }
