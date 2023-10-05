@@ -1,3 +1,5 @@
+package Deprecated;
+
 import DualEdgeDAG.DualEdge;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.AllDirectedPaths;

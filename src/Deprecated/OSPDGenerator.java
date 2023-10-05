@@ -1,3 +1,5 @@
+package Deprecated;
+
 import DualEdgeDAG.DualEdge;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;

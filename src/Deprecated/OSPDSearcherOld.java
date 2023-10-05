@@ -1,3 +1,5 @@
+package Deprecated;
+
 import DualEdgeDAG.DualEdge;
 import javafx.util.Pair;
 import org.jgrapht.GraphPath;

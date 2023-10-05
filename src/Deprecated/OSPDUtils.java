@@ -1,3 +1,5 @@
+package Deprecated;
+
 import DualEdgeDAG.DualEdge;
 import PhysicalDAG.SchedulabilityChecker;
 import javafx.util.Pair;
@@ -11,11 +13,11 @@ import java.util.stream.Stream;
 
 public class OSPDUtils {
 
-    static Double getCost(Set<DualEdge> currentState) {
+    public static Double getCost(Set<DualEdge> currentState) {
         return currentState.stream().map(DualEdge::getWeight).reduce(0.0, Double::sum);
     }
 
-    static Set<GraphPath<Integer, DualEdge>> getChainPaths(DirectedAcyclicGraph<Integer, DualEdge> dag) {
+    public static Set<GraphPath<Integer, DualEdge>> getChainPaths(DirectedAcyclicGraph<Integer, DualEdge> dag) {
         AllDirectedPaths<Integer, DualEdge> dijkstra = new AllDirectedPaths<Integer, DualEdge>(dag);
         Set<GraphPath<Integer, DualEdge>> cpaths = new HashSet<GraphPath<Integer, DualEdge>>();
         for (Integer source : dag.vertexSet()) {
@@ -40,7 +42,7 @@ public class OSPDUtils {
         return cpaths;
     }
 
-    static Set<Integer> getBlockedVertices(DirectedAcyclicGraph<Integer, DualEdge> dag) {
+    public static Set<Integer> getBlockedVertices(DirectedAcyclicGraph<Integer, DualEdge> dag) {
         AllDirectedPaths<Integer, DualEdge> dijkstra = new AllDirectedPaths<Integer, DualEdge>(dag);
         Set<Integer> blockedVertices = new HashSet<Integer>();
         for (Integer source : dag.vertexSet()) {
@@ -60,7 +62,7 @@ public class OSPDUtils {
         return blockedVertices;
     }
 
-    static boolean testStateValidity(DirectedAcyclicGraph<Integer, DualEdge> dag, Set<DualEdge> currentState) {
+    public static boolean testStateValidity(DirectedAcyclicGraph<Integer, DualEdge> dag, Set<DualEdge> currentState) {
         DirectedAcyclicGraph<Integer, DualEdge> dagCopy = (DirectedAcyclicGraph<Integer, DualEdge>) dag.clone();
         for (DualEdge e : currentState) {
             dagCopy.removeEdge(e);
@@ -72,7 +74,7 @@ public class OSPDUtils {
         return SchedulabilityChecker.checkPhysicalDAGSchedulability(dagCopy, false);
     }
 
-    static Set<GraphPath<Integer, DualEdge>> getMinimalProblematicPaths(DirectedAcyclicGraph<Integer, DualEdge> dag) {
+    public static Set<GraphPath<Integer, DualEdge>> getMinimalProblematicPaths(DirectedAcyclicGraph<Integer, DualEdge> dag) {
         Map<Pair<Integer, Integer>, Pair<Set<GraphPath<Integer, DualEdge>>, Set<GraphPath<Integer, DualEdge>>>> conflictingVertices = new HashMap<Pair<Integer, Integer>, Pair<Set<GraphPath<Integer, DualEdge>>, Set<GraphPath<Integer, DualEdge>>>>();
         AllDirectedPaths<Integer, DualEdge> dijkstra = new AllDirectedPaths<Integer, DualEdge>(dag);
         for (Integer source : dag.vertexSet()) {
@@ -116,7 +118,7 @@ public class OSPDUtils {
         return conflictingVertices.values().stream().map(Pair::getValue).reduce(new HashSet<GraphPath<Integer, DualEdge>>(), (s1, s2) -> Stream.concat(s1.stream(), s2.stream()).collect(Collectors.toSet()));
     }
 
-    static void reduceConflictPairs(DirectedAcyclicGraph<Integer, DualEdge> dag, Pair<Integer, Integer> vp1, Pair<Set<GraphPath<Integer, DualEdge>>, Set<GraphPath<Integer, DualEdge>>> cp1, Pair<Integer, Integer> vp2, Pair<Set<GraphPath<Integer, DualEdge>>, Set<GraphPath<Integer, DualEdge>>> cp2) {
+    public static void reduceConflictPairs(DirectedAcyclicGraph<Integer, DualEdge> dag, Pair<Integer, Integer> vp1, Pair<Set<GraphPath<Integer, DualEdge>>, Set<GraphPath<Integer, DualEdge>>> cp1, Pair<Integer, Integer> vp2, Pair<Set<GraphPath<Integer, DualEdge>>, Set<GraphPath<Integer, DualEdge>>> cp2) {
         if (Objects.equals(vp1.getKey(), vp2.getKey()) || dag.getDescendants(vp1.getKey()).contains(vp2.getKey())) {
             if (Objects.equals(vp1.getValue(), vp2.getValue()) || dag.getDescendants(vp2.getValue()).contains(vp1.getValue())) {
                 // If all the paths are contained
@@ -126,7 +128,7 @@ public class OSPDUtils {
         }
     }
 
-    static void reducePathSet(Set<GraphPath<Integer, DualEdge>> pathSet1, Set<GraphPath<Integer, DualEdge>> pathSet2) {
+    public static void reducePathSet(Set<GraphPath<Integer, DualEdge>> pathSet1, Set<GraphPath<Integer, DualEdge>> pathSet2) {
         Iterator<GraphPath<Integer, DualEdge>> iterator = pathSet1.iterator();
         while (iterator.hasNext()) {
             GraphPath<Integer, DualEdge> cp1 = iterator.next();
