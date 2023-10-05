@@ -1,6 +1,8 @@
+package OSPD;
+
 import DualEdgeDAG.DualEdge;
-import LogicalDAG.LogicalDAG;
-import PhysicalDAG.PhysicalDAG;
+import OSPD.LogicalDAG.LogicalDAG;
+import OSPD.PhysicalDAG.PhysicalDAG;
 
 import java.math.BigDecimal;
 import java.util.HashSet;

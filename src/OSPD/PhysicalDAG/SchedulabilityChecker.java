@@ -1,4 +1,4 @@
-package PhysicalDAG;
+package OSPD.PhysicalDAG;
 
 import DualEdgeDAG.DualEdge;
 import org.jgrapht.GraphPath;

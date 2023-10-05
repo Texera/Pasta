@@ -1,8 +1,8 @@
-package PhysicalDAG;
+package OSPD.PhysicalDAG;
 
 import DualEdgeDAG.DualDAGImageRenderer;
 import DualEdgeDAG.DualEdge;
-import LogicalDAG.LogicalDAG;
+import OSPD.LogicalDAG.LogicalDAG;
 import com.mxgraph.model.mxICell;
 import org.jgrapht.Graphs;
 import org.jgrapht.ext.JGraphXAdapter;
@@ -73,7 +73,7 @@ public class PhysicalDAG {
 
     @Override
     public String toString() {
-        return "PhysicalDAG{" +
+        return "OSPD.PhysicalDAG{" +
                 "logicalDAG=" + logicalDAG +
                 ", materializedEdges=" + matLogicalEdges +
                 ", cost=" + cost +

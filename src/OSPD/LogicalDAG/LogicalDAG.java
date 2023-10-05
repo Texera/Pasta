@@ -1,4 +1,4 @@
-package LogicalDAG;
+package OSPD.LogicalDAG;
 
 import DualEdgeDAG.DualDAGImageRenderer;
 import DualEdgeDAG.DualEdge;
@@ -42,7 +42,7 @@ public class LogicalDAG {
 
     @Override
     public String toString() {
-        return "LogicalDAG{" +
+        return "OSPD.LogicalDAG{" +
                 "dualDAG=" + dualDAG +
                 ", blockingEdges=" + blockingEdges +
                 '}';

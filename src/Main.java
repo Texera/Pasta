@@ -1,7 +1,8 @@
 import DualEdgeDAG.DualDAGRepeatableGenerator;
 import DualEdgeDAG.DualEdge;
-import LogicalDAG.LogicalDAG;
-import PhysicalDAG.PhysicalDAG;
+import OSPD.LogicalDAG.LogicalDAG;
+import OSPD.OSPDSearcher;
+import OSPD.PhysicalDAG.PhysicalDAG;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.util.SupplierUtil;
 

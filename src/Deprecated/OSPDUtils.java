@@ -1,7 +1,7 @@
 package Deprecated;
 
 import DualEdgeDAG.DualEdge;
-import PhysicalDAG.SchedulabilityChecker;
+import OSPD.PhysicalDAG.SchedulabilityChecker;
 import javafx.util.Pair;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.AllDirectedPaths;
