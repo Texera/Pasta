@@ -57,8 +57,18 @@ public class Main {
 
         LogicalDAG logicalDAG = new LogicalDAG(randomDAGWithCost);
         logicalDAG.renderDAGImageToPath(outputPath.resolve("input_logical_DAG.png").toString());
-        OSPDSearcher ospdSearcher = new OSPDSearcher(logicalDAG);
-        PhysicalDAG ospd = ospdSearcher.execute();
-        ospd.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG.png").toString());
+        OSPDSearcher ospdSearcherBaseline = new OSPDSearcher(logicalDAG);
+        PhysicalDAG ospdOfBaseline = ospdSearcherBaseline.execute();
+        ospdOfBaseline.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG.png").toString());
+        OSPDSearcher ospdSearcherRule1 = new OSPDSearcher(logicalDAG);
+        ospdSearcherRule1.setPruneByChains(true);
+        PhysicalDAG ospd1 = ospdSearcherRule1.execute();
+        ospd1.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1.png").toString());
+
+        OSPDSearcher ospdSearcherRule12 = new OSPDSearcher(logicalDAG);
+        ospdSearcherRule12.setPruneByChains(true);
+        ospdSearcherRule12.setPruneBySafeEdges(true);
+        PhysicalDAG ospd12 = ospdSearcherRule12.execute();
+        ospd12.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2.png").toString());
     }
 }

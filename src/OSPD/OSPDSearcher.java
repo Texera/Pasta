@@ -3,19 +3,20 @@ package OSPD;
 import DualEdgeDAG.DualEdge;
 import OSPD.LogicalDAG.LogicalDAG;
 import OSPD.PhysicalDAG.PhysicalDAG;
+import com.google.common.collect.Sets;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 public class OSPDSearcher {
     private final LogicalDAG inputLogicalDAG;
-
-    private final PhysicalDAG seedState;
     private final BigDecimal searchSpaceSize;
     private final LinkedList<PhysicalDAG> searchQueue = new LinkedList<>();
     private final HashSet<PhysicalDAG> visitedSet = new HashSet<>();
+    private PhysicalDAG seedState;
     private PhysicalDAG OSPD;
 
     private boolean pruneByChains = false;
@@ -28,7 +29,6 @@ public class OSPDSearcher {
         this.inputLogicalDAG = inputLogicalDAG;
         this.seedState = new PhysicalDAG(inputLogicalDAG, inputLogicalDAG.getDualDAG().edgeSet());
         this.searchSpaceSize = BigDecimal.valueOf((1L << (this.inputLogicalDAG.getDualDAG().edgeSet().size() - this.inputLogicalDAG.getBlockingEdges().size())));
-        System.out.println("Chains: " + OSPDUtils.getChainPaths(inputLogicalDAG.getDualDAG()));
     }
 
     public PhysicalDAG execute() {
@@ -44,12 +44,47 @@ public class OSPDSearcher {
 
     public void executeSearch() {
         System.out.println("Starting search for logical DAG: " + this.inputLogicalDAG);
-        System.out.println("Search-space size: " + this.searchSpaceSize);
+        System.out.println("Complete search-space size: " + this.searchSpaceSize);
+        if (this.pruneBySafeEdges) {
+            System.out.println("Using rule 2: prune by safe edges.");
+            Set<DualEdge> modifiedSeedStateMaterializedEdges = this.seedState.getMatLogicalEdges();
+            modifiedSeedStateMaterializedEdges.removeAll(this.inputLogicalDAG.getSafeEdges());
+            this.seedState = new PhysicalDAG(this.inputLogicalDAG, modifiedSeedStateMaterializedEdges);
+        }
+
         this.OSPD = this.seedState;
         this.searchQueue.clear();
         this.visitedSet.clear();
-        this.searchQueue.add(seedState);
-        this.visitedSet.add(seedState);
+        if (this.pruneByChains) {
+            System.out.println("Using rule 1: prune by chains.");
+            System.out.println("Chains are: " + OSPDUtils.getChainPaths(inputLogicalDAG.getDualDAG()));
+            Set<DualEdge> modifiedSeedStateMatEdges = new HashSet<>(this.seedState.getMatLogicalEdges());
+            List<Set<DualEdge>> zeroBlockingChains = new LinkedList<>();
+            this.inputLogicalDAG.getChains().forEach(chain -> {
+                List<DualEdge> chainEdgeList = chain.getEdgeList();
+                if (chainEdgeList.stream().anyMatch(this.inputLogicalDAG::isBlockingEdge)) {
+                    // A chain with at least one blocking edge does not need materialization on any non-blocking edges.
+                    chainEdgeList.stream().filter(e -> !this.inputLogicalDAG.isBlockingEdge(e)).forEach(modifiedSeedStateMatEdges::remove);
+                } else {
+                    // A chain with no blocking edge needs at most one materialization on a non-blocking edge.
+                    zeroBlockingChains.add(new HashSet<>(chainEdgeList));
+                    // Remove this chain from the materialized edges first.
+                    chainEdgeList.forEach(modifiedSeedStateMatEdges::remove);
+                }
+            });
+            Set<List<DualEdge>> combinations = Sets.cartesianProduct(zeroBlockingChains);
+            combinations.forEach(c -> {
+                Set<DualEdge> newStateMatEdges = new HashSet<>(modifiedSeedStateMatEdges);
+                newStateMatEdges.addAll(c);
+                PhysicalDAG newState = new PhysicalDAG(this.inputLogicalDAG, newStateMatEdges);
+                System.out.println("Combination: " + c + ", state: " + newState);
+                this.searchQueue.add(newState);
+                this.visitedSet.add(newState);
+            });
+        } else {
+            this.searchQueue.add(seedState);
+            this.visitedSet.add(seedState);
+        }
         while (!searchQueue.isEmpty()) {
             PhysicalDAG currentState = searchQueue.poll();
             if (currentState.checkSchedulability()) {

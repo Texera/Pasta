@@ -10,6 +10,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.util.SupplierUtil;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -20,7 +21,7 @@ public class PhysicalDAG {
 
     public PhysicalDAG(LogicalDAG logicalDAG, Set<DualEdge> matLogicalEdges) {
         this.logicalDAG = logicalDAG;
-        this.matLogicalEdges = matLogicalEdges;
+        this.matLogicalEdges = new HashSet<>(matLogicalEdges);
         assert matLogicalEdges.containsAll(this.logicalDAG.getBlockingEdges());
         this.cost = this.matLogicalEdges.stream().map(DualEdge::getWeight).reduce(0.0, Double::sum);
     }
