@@ -2,6 +2,8 @@ package OSPD.LogicalDAG;
 
 import DualEdgeDAG.DualDAGImageRenderer;
 import DualEdgeDAG.DualEdge;
+import OSPD.OSPDUtils;
+import org.jgrapht.GraphPath;
 import org.jgrapht.ext.JGraphXAdapter;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
@@ -13,9 +15,16 @@ public class LogicalDAG {
     private final DirectedAcyclicGraph<Integer, DualEdge> dualDAG;
     private final Set<DualEdge> blockingEdges;
 
+    private final Set<GraphPath<Integer, DualEdge>> chains;
+
     public LogicalDAG(DirectedAcyclicGraph<Integer, DualEdge> dualDAG) {
         this.dualDAG = dualDAG;
         this.blockingEdges = this.dualDAG.edgeSet().stream().filter(DualEdge::isBlkOrMat).collect(Collectors.toSet());
+        this.chains = OSPDUtils.getChainPaths(this.dualDAG);
+    }
+
+    public Set<GraphPath<Integer, DualEdge>> getChains() {
+        return chains;
     }
 
     public Set<DualEdge> getBlockingEdges() {

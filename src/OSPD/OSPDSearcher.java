@@ -18,10 +18,17 @@ public class OSPDSearcher {
     private final HashSet<PhysicalDAG> visitedSet = new HashSet<>();
     private PhysicalDAG OSPD;
 
+    private boolean pruneByChains = false;
+
+    private boolean pruneBySafeEdges = false;
+
+    private boolean pruneByUnsalvageableStates = false;
+
     public OSPDSearcher(LogicalDAG inputLogicalDAG) {
         this.inputLogicalDAG = inputLogicalDAG;
         this.seedState = new PhysicalDAG(inputLogicalDAG, inputLogicalDAG.getDualDAG().edgeSet());
         this.searchSpaceSize = BigDecimal.valueOf((1L << (this.inputLogicalDAG.getDualDAG().edgeSet().size() - this.inputLogicalDAG.getBlockingEdges().size())));
+        System.out.println("Chains: " + OSPDUtils.getChainPaths(inputLogicalDAG.getDualDAG()));
     }
 
     public PhysicalDAG execute() {
@@ -68,5 +75,17 @@ public class OSPDSearcher {
         System.out.println("Search completed, number of states visited: " + visitedSet.size());
         System.out.println("OSPD: " + this.OSPD);
         this.OSPD.showSchedulability();
+    }
+
+    public void setPruneByChains(boolean pruneByChains) {
+        this.pruneByChains = pruneByChains;
+    }
+
+    public void setPruneBySafeEdges(boolean pruneBySafeEdges) {
+        this.pruneBySafeEdges = pruneBySafeEdges;
+    }
+
+    public void setPruneByUnsalvageableStates(boolean pruneByUnsalvageableStates) {
+        this.pruneByUnsalvageableStates = pruneByUnsalvageableStates;
     }
 }

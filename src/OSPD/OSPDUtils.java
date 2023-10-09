@@ -1,4 +1,4 @@
-package Deprecated;
+package OSPD;
 
 import DualEdgeDAG.DualEdge;
 import OSPD.PhysicalDAG.SchedulabilityChecker;
@@ -18,8 +18,8 @@ public class OSPDUtils {
     }
 
     public static Set<GraphPath<Integer, DualEdge>> getChainPaths(DirectedAcyclicGraph<Integer, DualEdge> dag) {
-        AllDirectedPaths<Integer, DualEdge> dijkstra = new AllDirectedPaths<Integer, DualEdge>(dag);
-        Set<GraphPath<Integer, DualEdge>> cpaths = new HashSet<GraphPath<Integer, DualEdge>>();
+        AllDirectedPaths<Integer, DualEdge> dijkstra = new AllDirectedPaths<>(dag);
+        Set<GraphPath<Integer, DualEdge>> cpaths = new HashSet<>();
         for (Integer source : dag.vertexSet()) {
             for (Integer target : dag.getDescendants(source)) {
                 List<GraphPath<Integer, DualEdge>> paths = dijkstra.getAllPaths(source, target, true, Integer.MAX_VALUE);
@@ -33,10 +33,10 @@ public class OSPDUtils {
         Iterator<GraphPath<Integer, DualEdge>> iterator = cpaths.iterator();
         while (iterator.hasNext()) {
             GraphPath<Integer, DualEdge> gp = iterator.next();
-            Set<DualEdge> gps = new HashSet<DualEdge>(gp.getEdgeList());
-            HashSet<GraphPath<Integer, DualEdge>> pCopy = new HashSet<GraphPath<Integer, DualEdge>>(cpaths);
+            Set<DualEdge> gps = new HashSet<>(gp.getEdgeList());
+            HashSet<GraphPath<Integer, DualEdge>> pCopy = new HashSet<>(cpaths);
             pCopy.remove(gp);
-            if (pCopy.stream().map(p -> new HashSet<DualEdge>(p.getEdgeList())).anyMatch(s -> s.containsAll(gps)))
+            if (pCopy.stream().map(p -> new HashSet<>(p.getEdgeList())).anyMatch(s -> s.containsAll(gps)))
                 iterator.remove();
         }
         return cpaths;
