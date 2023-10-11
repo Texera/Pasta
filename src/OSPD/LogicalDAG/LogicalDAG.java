@@ -18,7 +18,6 @@ public class LogicalDAG {
 
     private final Set<DualEdge> nonBlockingEdges;
     private final Set<GraphPath<Integer, DualEdge>> chains;
-
     private final AsUndirectedGraph<Integer, DualEdge> uDualDAG;
 
     private final Set<List<DualEdge>> uCycleBases;

@@ -33,7 +33,7 @@ public class OSPDSearcher {
 
     public PhysicalDAG execute() {
         PhysicalDAG allNonBlockingPipelinedState = new PhysicalDAG(inputLogicalDAG, inputLogicalDAG.getBlockingEdges());
-        if (allNonBlockingPipelinedState.showSchedulability()) {
+        if (allNonBlockingPipelinedState.checkSchedulability()) {
             this.OSPD = allNonBlockingPipelinedState;
             System.out.println(this.inputLogicalDAG + " is natively schedulable. Search skipped.");
         } else {
@@ -45,8 +45,11 @@ public class OSPDSearcher {
     public void executeSearch() {
         System.out.println("Starting search for logical DAG: " + this.inputLogicalDAG);
         System.out.println("Complete search-space size: " + this.searchSpaceSize);
+        if (this.pruneByChains) System.out.println("Using rule 1: prune by chains.");
+        if (this.pruneBySafeEdges) System.out.println("Using rule 2: prune by safe edges.");
+        if (this.pruneByUnsalvageableStates) System.out.println("Using rule 3: stop at unsalvageable states.");
+
         if (this.pruneBySafeEdges) {
-            System.out.println("Using rule 2: prune by safe edges.");
             Set<DualEdge> modifiedSeedStateMaterializedEdges = this.seedState.getMatLogicalEdges();
             modifiedSeedStateMaterializedEdges.removeAll(this.inputLogicalDAG.getSafeEdges());
             this.seedState = new PhysicalDAG(this.inputLogicalDAG, modifiedSeedStateMaterializedEdges);
@@ -56,7 +59,6 @@ public class OSPDSearcher {
         this.searchQueue.clear();
         this.visitedSet.clear();
         if (this.pruneByChains) {
-            System.out.println("Using rule 1: prune by chains.");
             System.out.println("Chains are: " + OSPDUtils.getChainPaths(inputLogicalDAG.getDualDAG()));
             Set<DualEdge> modifiedSeedStateMatEdges = new HashSet<>(this.seedState.getMatLogicalEdges());
             List<Set<DualEdge>> zeroBlockingChains = new LinkedList<>();
@@ -77,7 +79,7 @@ public class OSPDSearcher {
                 Set<DualEdge> newStateMatEdges = new HashSet<>(modifiedSeedStateMatEdges);
                 newStateMatEdges.addAll(c);
                 PhysicalDAG newState = new PhysicalDAG(this.inputLogicalDAG, newStateMatEdges);
-                System.out.println("Combination: " + c + ", state: " + newState);
+//                System.out.println("Combination: " + c + ", state: " + newState);
                 this.searchQueue.add(newState);
                 this.visitedSet.add(newState);
             });
@@ -91,6 +93,8 @@ public class OSPDSearcher {
                 if (currentState.getCost() < this.OSPD.getCost()) {
                     this.OSPD = currentState;
                 }
+            } else if (this.pruneByUnsalvageableStates && this.pruneBySafeEdges) {
+                continue;
             }
             currentState.getMatLogicalEdges().forEach(lEdge -> {
                 if (!this.inputLogicalDAG.isBlockingEdge(lEdge)) {
@@ -109,7 +113,7 @@ public class OSPDSearcher {
         }
         System.out.println("Search completed, number of states visited: " + visitedSet.size());
         System.out.println("OSPD: " + this.OSPD);
-        this.OSPD.showSchedulability();
+//        this.OSPD.showSchedulability();
     }
 
     public void setPruneByChains(boolean pruneByChains) {
