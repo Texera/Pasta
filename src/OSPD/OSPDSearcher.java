@@ -69,9 +69,16 @@ public class OSPDSearcher {
                     chainEdgeList.stream().filter(e -> !this.inputLogicalDAG.isBlockingEdge(e)).forEach(modifiedSeedStateMatEdges::remove);
                 } else {
                     // A chain with no blocking edge needs at most one materialization on a non-blocking edge.
-                    zeroBlockingChains.add(new HashSet<>(chainEdgeList));
                     // Remove this chain from the materialized edges first.
                     chainEdgeList.forEach(modifiedSeedStateMatEdges::remove);
+                    if (this.pruneBySafeEdges) {
+                        List<DualEdge> nonSafeChangeEdgeList = new LinkedList<>(chainEdgeList);
+                        nonSafeChangeEdgeList.removeAll(this.inputLogicalDAG.getSafeEdges());
+                        if (!nonSafeChangeEdgeList.isEmpty())
+                            zeroBlockingChains.add(new HashSet<>(nonSafeChangeEdgeList));
+                    } else {
+                        zeroBlockingChains.add(new HashSet<>(chainEdgeList));
+                    }
                 }
             });
             Set<List<DualEdge>> combinations = Sets.cartesianProduct(zeroBlockingChains);
@@ -88,13 +95,20 @@ public class OSPDSearcher {
             this.visitedSet.add(seedState);
         }
         while (!searchQueue.isEmpty()) {
+            if (visitedSet.size() > 1E6) {
+                System.out.println(visitedSet.size() + " states visited, exceeds 1,000,000, search terminated early.");
+                break;
+            }
+
             PhysicalDAG currentState = searchQueue.poll();
             if (currentState.checkSchedulability()) {
                 if (currentState.getCost() < this.OSPD.getCost()) {
                     this.OSPD = currentState;
                 }
-            } else if (this.pruneByUnsalvageableStates && this.pruneBySafeEdges) {
-                continue;
+            } else if (this.pruneByUnsalvageableStates) {
+                if (this.inputLogicalDAG.getMustMaterializeAtLeastOneEdgeSets().stream().anyMatch(edgeSet -> edgeSet.stream().noneMatch(e -> currentState.getMatLogicalEdges().contains(e)))) {
+                    continue;
+                }
             }
             currentState.getMatLogicalEdges().forEach(lEdge -> {
                 if (!this.inputLogicalDAG.isBlockingEdge(lEdge)) {
@@ -111,7 +125,7 @@ public class OSPDSearcher {
                 }
             });
         }
-        System.out.println("Search completed, number of states visited: " + visitedSet.size());
+        System.out.println("Number of states visited: " + visitedSet.size());
         System.out.println("OSPD: " + this.OSPD);
 //        this.OSPD.showSchedulability();
     }

@@ -18,22 +18,59 @@ public class LogicalDAG {
 
     private final Set<DualEdge> nonBlockingEdges;
     private final Set<GraphPath<Integer, DualEdge>> chains;
-    private final AsUndirectedGraph<Integer, DualEdge> uDualDAG;
+    private final AsUndirectedGraph<Integer, DualEdge> undirectedDualDAG;
 
-    private final Set<List<DualEdge>> uCycleBases;
+    private final Set<List<DualEdge>> undirectedCycleBases;
+
+    private final Set<Set<DualEdge>> allUndirectedCyclesWithBlockingEdgesEdgeSet;
 
     private final Set<DualEdge> safeEdges;
+
+    private final Map<DualEdge, Set<Set<DualEdge>>> oppositeUndirectedCycleTraversalNBEdges;
+
+    private final Set<Set<DualEdge>> mustMaterializeAtLeastOneEdgeSets;
 
     public LogicalDAG(DirectedAcyclicGraph<Integer, DualEdge> dualDAG) {
         this.dualDAG = dualDAG;
         this.blockingEdges = this.dualDAG.edgeSet().stream().filter(DualEdge::isBlkOrMat).collect(Collectors.toSet());
         this.nonBlockingEdges = this.dualDAG.edgeSet().stream().filter(e -> !e.isBlkOrMat()).collect(Collectors.toSet());
         this.chains = OSPDUtils.getChainPaths(this.dualDAG);
-        this.uDualDAG = new AsUndirectedGraph<>(dualDAG);
-        this.uCycleBases = findUCycleBases();
-        System.out.println("Undirected cycle bases are:" + uCycleBases);
-        this.safeEdges = this.findSafeEdges();
+        this.undirectedDualDAG = new AsUndirectedGraph<>(dualDAG);
+        this.undirectedCycleBases = findUndirectedCycleBases();
+        System.out.println("Undirected cycle bases are:" + undirectedCycleBases);
+        this.allUndirectedCyclesWithBlockingEdgesEdgeSet = this.findAllSimpleCyclesWithBlockingEdges();
+        System.out.println("All undirected cycles are: " + this.allUndirectedCyclesWithBlockingEdgesEdgeSet);
+        this.safeEdges = this.findSafeEdgesViaAllCycles();
         System.out.println("Safe edges are: " + safeEdges);
+        this.oppositeUndirectedCycleTraversalNBEdges = this.findOppositeUCycleTraversalNBEdges();
+        System.out.println("Opposite undirected cycle traversal non blocking edges: " + this.oppositeUndirectedCycleTraversalNBEdges);
+        this.mustMaterializeAtLeastOneEdgeSets = this.oppositeUndirectedCycleTraversalNBEdges.values().parallelStream().flatMap(Set::stream).collect(Collectors.toSet());
+        System.out.println("Must have at least one materialization in each of the following sets of non-blocking edges: " + this.mustMaterializeAtLeastOneEdgeSets);
+    }
+
+    private static LinkedList<DualEdge> getCycleTraversalFromCycleEdgeSet(Set<DualEdge> undirectedCycle) {
+        LinkedList<DualEdge> cycleTraversal = new LinkedList<>();
+        Set<DualEdge> edgesInCycle = new HashSet<>(undirectedCycle);
+        DualEdge currentEdge = edgesInCycle.iterator().next();
+        while (!edgesInCycle.isEmpty()) {
+            cycleTraversal.add(currentEdge);
+            edgesInCycle.remove(currentEdge);
+            if (!edgesInCycle.isEmpty()) {
+                DualEdge finalCurrentEdge = currentEdge;
+                Set<DualEdge> overlappingEdges = edgesInCycle.stream().filter(
+                        edge -> edge.getSource() == finalCurrentEdge.getSource()
+                                || edge.getSource() == finalCurrentEdge.getTarget()
+                                || edge.getTarget() == finalCurrentEdge.getTarget()
+                                || edge.getTarget() == finalCurrentEdge.getSource()
+                ).collect(Collectors.toSet());
+                if (!overlappingEdges.isEmpty()) {
+                    currentEdge = overlappingEdges.iterator().next();
+                } else {
+                    throw new UnsupportedOperationException("Original cycle set: " + undirectedCycle + ", current traversal: " + cycleTraversal + ", current edge: " + finalCurrentEdge + ", remaining edges: " + edgesInCycle);
+                }
+            }
+        }
+        return cycleTraversal;
     }
 
     public Set<GraphPath<Integer, DualEdge>> getChains() {
@@ -66,17 +103,53 @@ public class LogicalDAG {
         DualDAGImageRenderer.renderDAGToFile(path, graphAdapter);
     }
 
-    public AsUndirectedGraph<Integer, DualEdge> getuDualDAG() {
-        return uDualDAG;
+    public AsUndirectedGraph<Integer, DualEdge> getUndirectedDualDAG() {
+        return undirectedDualDAG;
     }
 
-    private Set<List<DualEdge>> findUCycleBases() {
-        PatonCycleBase<Integer, DualEdge> cycleFinder = new PatonCycleBase<>(this.uDualDAG);
+    private Set<List<DualEdge>> findUndirectedCycleBases() {
+        PatonCycleBase<Integer, DualEdge> cycleFinder = new PatonCycleBase<>(this.undirectedDualDAG);
         return cycleFinder.getCycleBasis().getCycles();
     }
 
-    private Set<DualEdge> findSafeEdges() {
-        Set<Set<DualEdge>> mergedUCycleBaseSets = this.uCycleBases.stream().map(HashSet::new).collect(Collectors.toSet());
+    private Set<Set<DualEdge>> findAllSimpleCyclesWithBlockingEdges() {
+        Set<Set<DualEdge>> cycleBases = new HashSet<>(this.undirectedCycleBases.stream().map(HashSet::new).collect(Collectors.toSet()));
+
+        Set<Set<DualEdge>> allCycles = new HashSet<>(cycleBases);
+
+        while (true) {
+            Set<Set<DualEdge>> currentBase = new HashSet<>(allCycles);
+            currentBase.forEach(i -> {
+                currentBase.forEach(j -> {
+                    if (i != j) {
+                        Set<DualEdge> overlap = new HashSet<>(i);
+                        overlap.retainAll(j);
+                        if (!overlap.isEmpty()) {
+                            Set<DualEdge> newCycle = new HashSet<>(i);
+                            newCycle.addAll(j);
+                            newCycle.removeAll(overlap);
+                            if (!allCycles.contains(newCycle)) {
+                                try {
+                                    getCycleTraversalFromCycleEdgeSet(newCycle);
+//                                    System.out.println("New cycle found: " + newCycle);
+                                    allCycles.add(newCycle);
+                                } catch (UnsupportedOperationException e) {
+//                                    System.out.println("Not a cycle: " + newCycle);
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+            if (currentBase.equals(allCycles)) break;
+            System.out.println("Merged 1 round.");
+        }
+
+        return allCycles.stream().filter(cycle -> cycle.stream().anyMatch(this::isBlockingEdge)).collect(Collectors.toSet());
+    }
+
+    private Set<DualEdge> findSafeEdgesViaMerging() {
+        Set<Set<DualEdge>> mergedUCycleBaseSets = this.undirectedCycleBases.stream().map(HashSet::new).collect(Collectors.toSet());
         boolean merged = true;
 
         // Keep merging until no more merges are possible
@@ -108,12 +181,52 @@ public class LogicalDAG {
         return this.nonBlockingEdges.stream().filter(e -> mergedUCycleBaseSetsWithBlockingEdges.stream().noneMatch(s -> s.contains(e))).collect(Collectors.toSet());
     }
 
-    public Set<List<DualEdge>> getUCycleBases() {
-        return uCycleBases;
+    private Set<DualEdge> findSafeEdgesViaAllCycles() {
+        return this.nonBlockingEdges.stream().filter(nbEdge -> this.allUndirectedCyclesWithBlockingEdgesEdgeSet.stream().noneMatch(cycle -> cycle.contains(nbEdge))).collect(Collectors.toSet());
+    }
+
+    private Map<DualEdge, Set<Set<DualEdge>>> findOppositeUCycleTraversalNBEdges() {
+        Map<DualEdge, Set<Set<DualEdge>>> oppositeUCycleTraversalNBEdges = new HashMap<>();
+        this.blockingEdges.forEach(bE -> oppositeUCycleTraversalNBEdges.put(bE, new HashSet<>()));
+        this.allUndirectedCyclesWithBlockingEdgesEdgeSet.forEach(undirectedCycleEdgeSet -> {
+            LinkedList<DualEdge> cycleTraversal = getCycleTraversalFromCycleEdgeSet(undirectedCycleEdgeSet);
+            Map<DualEdge, Boolean> isForwardTraversalEdge = new HashMap<>();
+            isForwardTraversalEdge.put(cycleTraversal.get(0), true);
+            for (int i = 1; i < cycleTraversal.size(); i++) {
+                DualEdge currentEdge = cycleTraversal.get(i);
+                DualEdge previousEdge = cycleTraversal.get(i - 1);
+                if (currentEdge.getSource().equals(previousEdge.getTarget()) || previousEdge.getSource().equals(currentEdge.getTarget())) {
+                    isForwardTraversalEdge.put(currentEdge, isForwardTraversalEdge.get(previousEdge));
+                } else {
+                    isForwardTraversalEdge.put(currentEdge, !isForwardTraversalEdge.get(previousEdge));
+                }
+            }
+            undirectedCycleEdgeSet.stream().filter(this::isBlockingEdge).forEach(bE -> {
+                Set<DualEdge> oppositeTraversalEdges = undirectedCycleEdgeSet.stream().filter(e -> !isForwardTraversalEdge.get(e).equals(isForwardTraversalEdge.get(bE))).collect(Collectors.toSet());
+                if (oppositeTraversalEdges.stream().noneMatch(this::isBlockingEdge)) {
+                    // Only add those with all-non-blocking edges.
+                    oppositeUCycleTraversalNBEdges.get(bE).add(oppositeTraversalEdges);
+                }
+//                System.out.println("For blocking edge " + bE + ", on Cycle " + cycleTraversal + ", " + oppositeTraversalEdges + " have the opposite direction.");
+            });
+        });
+        return oppositeUCycleTraversalNBEdges;
+    }
+
+    public Set<List<DualEdge>> getUndirectedCycleBases() {
+        return undirectedCycleBases;
     }
 
     public Set<DualEdge> getSafeEdges() {
         return safeEdges;
+    }
+
+    public Map<DualEdge, Set<Set<DualEdge>>> getOppositeUndirectedCycleTraversalNBEdges() {
+        return oppositeUndirectedCycleTraversalNBEdges;
+    }
+
+    public Set<Set<DualEdge>> getMustMaterializeAtLeastOneEdgeSets() {
+        return mustMaterializeAtLeastOneEdgeSets;
     }
 
     @Override
