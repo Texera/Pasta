@@ -10,6 +10,8 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,6 +19,26 @@ import java.util.Map;
 import java.util.Set;
 
 public class AlteryxYXMDParser {
+
+
+    private static final Set<String> blockingOpDLLNames = readBlockingOperationEngineDllEntryPoints("/Users/xzliu/IdeaProjects/DualEdgeDAG/src/WorkflowParser/AlteryxBlockingOperations.conf");
+
+
+    private static Set<String> readBlockingOperationEngineDllEntryPoints(String configPath) {
+        Set<String> configSet = new HashSet<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(configPath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                configSet.add(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return configSet;
+    }
+
     public static DirectedAcyclicGraph<Integer, DualEdge> parseYXMD(String filePath) {
         DirectedAcyclicGraph<Integer, DualEdge> dualDAG = new DirectedAcyclicGraph<>(SupplierUtil.createIntegerSupplier(), DualEdge::new, true);
         Element yxmdDocRoot;
@@ -55,6 +77,10 @@ public class AlteryxYXMDParser {
             Element destEngineSettings = (Element) destNode.getElementsByTagName("EngineSettings").item(0);
             if (destEngineSettings.getAttribute("EngineDllEntryPoint").equals("AlteryxJoin")
                     && (destination.getAttribute("Connection").equals("Left"))) {
+                newEdge.setBlkOrMat(true);
+            }
+            Element srcEngineSettings = (Element) srcNode.getElementsByTagName("EngineSettings").item(0);
+            if (blockingOpDLLNames.contains(srcEngineSettings.getAttribute("EngineDllEntryPoint"))) {
                 newEdge.setBlkOrMat(true);
             }
         }

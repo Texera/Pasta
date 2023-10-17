@@ -5,15 +5,14 @@ import OSPD.LogicalDAG.LogicalDAG;
 import OSPD.PhysicalDAG.PhysicalDAG;
 import com.google.common.collect.Sets;
 
-import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.math.BigInteger;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.*;
 
 public class OSPDSearcher {
     private final LogicalDAG inputLogicalDAG;
-    private final BigDecimal searchSpaceSize;
+    private final BigInteger searchSpaceSize;
     private final LinkedList<PhysicalDAG> searchQueue = new LinkedList<>();
     private final HashSet<PhysicalDAG> visitedSet = new HashSet<>();
     private PhysicalDAG seedState;
@@ -28,7 +27,12 @@ public class OSPDSearcher {
     public OSPDSearcher(LogicalDAG inputLogicalDAG) {
         this.inputLogicalDAG = inputLogicalDAG;
         this.seedState = new PhysicalDAG(inputLogicalDAG, inputLogicalDAG.getDualDAG().edgeSet());
-        this.searchSpaceSize = BigDecimal.valueOf((1L << (this.inputLogicalDAG.getDualDAG().edgeSet().size() - this.inputLogicalDAG.getBlockingEdges().size())));
+        int numNBEdges = this.inputLogicalDAG.getDualDAG().edgeSet().size() - this.inputLogicalDAG.getBlockingEdges().size();
+        this.searchSpaceSize = BigInteger.valueOf(2).pow(numNBEdges);
+        System.out.printf("Input logical DAG has %d edges, among which %d are blocking edges, and %d are non-blocking edges.%n",
+                this.inputLogicalDAG.getDualDAG().edgeSet().size(),
+                this.inputLogicalDAG.getBlockingEdges().size(),
+                numNBEdges);
     }
 
     public PhysicalDAG execute() {
@@ -44,7 +48,11 @@ public class OSPDSearcher {
 
     public void executeSearch() {
         System.out.println("Starting search for logical DAG: " + this.inputLogicalDAG);
-        System.out.println("Complete search-space size: " + this.searchSpaceSize);
+        System.out.printf("Complete search-space size: %s, i.e., %s.\n",
+                (new DecimalFormat("#,###")).format(this.searchSpaceSize),
+                (new DecimalFormat("0.###E0", DecimalFormatSymbols.getInstance(Locale.ROOT)))
+                        .format(this.searchSpaceSize)
+        );
         if (this.pruneByChains) System.out.println("Using rule 1: prune by chains.");
         if (this.pruneBySafeEdges) System.out.println("Using rule 2: prune by safe edges.");
         if (this.pruneByUnsalvageableStates) System.out.println("Using rule 3: stop at unsalvageable states.");
@@ -95,8 +103,8 @@ public class OSPDSearcher {
             this.visitedSet.add(seedState);
         }
         while (!searchQueue.isEmpty()) {
-            if (visitedSet.size() > 1E6) {
-                System.out.println(visitedSet.size() + " states visited, exceeds 1,000,000, search terminated early.");
+            if (visitedSet.size() > 1E5) {
+                System.out.println(visitedSet.size() + " states visited, exceeds 100,000, search terminated early.");
                 break;
             }
 

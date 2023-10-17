@@ -30,6 +30,8 @@ public class LogicalDAG {
 
     private final Set<Set<DualEdge>> mustMaterializeAtLeastOneEdgeSets;
 
+    private boolean allUndirectedCyclesEnumerated = false;
+
     public LogicalDAG(DirectedAcyclicGraph<Integer, DualEdge> dualDAG) {
         this.dualDAG = dualDAG;
         this.blockingEdges = this.dualDAG.edgeSet().stream().filter(DualEdge::isBlkOrMat).collect(Collectors.toSet());
@@ -37,15 +39,15 @@ public class LogicalDAG {
         this.chains = OSPDUtils.getChainPaths(this.dualDAG);
         this.undirectedDualDAG = new AsUndirectedGraph<>(dualDAG);
         this.undirectedCycleBases = findUndirectedCycleBases();
-        System.out.println("Undirected cycle bases are:" + undirectedCycleBases);
+//        System.out.println("Undirected cycle bases are:" + undirectedCycleBases);
         this.allUndirectedCyclesWithBlockingEdgesEdgeSet = this.findAllSimpleCyclesWithBlockingEdges();
-        System.out.println("All undirected cycles are: " + this.allUndirectedCyclesWithBlockingEdgesEdgeSet);
-        this.safeEdges = this.findSafeEdgesViaAllCycles();
-        System.out.println("Safe edges are: " + safeEdges);
+//        System.out.println("All undirected cycles are: " + this.allUndirectedCyclesWithBlockingEdgesEdgeSet);
+        this.safeEdges = allUndirectedCyclesEnumerated ? this.findSafeEdgesViaAllCycles() : this.findSafeEdgesViaMerging();
+//        System.out.println("Safe edges are: " + safeEdges);
         this.oppositeUndirectedCycleTraversalNBEdges = this.findOppositeUCycleTraversalNBEdges();
-        System.out.println("Opposite undirected cycle traversal non blocking edges: " + this.oppositeUndirectedCycleTraversalNBEdges);
+//        System.out.println("Opposite undirected cycle traversal non-blocking edges: " + this.oppositeUndirectedCycleTraversalNBEdges);
         this.mustMaterializeAtLeastOneEdgeSets = this.oppositeUndirectedCycleTraversalNBEdges.values().parallelStream().flatMap(Set::stream).collect(Collectors.toSet());
-        System.out.println("Must have at least one materialization in each of the following sets of non-blocking edges: " + this.mustMaterializeAtLeastOneEdgeSets);
+//        System.out.println("Must have at least one materialization in each of the following sets of non-blocking edges: " + this.mustMaterializeAtLeastOneEdgeSets);
     }
 
     private static LinkedList<DualEdge> getCycleTraversalFromCycleEdgeSet(Set<DualEdge> undirectedCycle) {
@@ -58,10 +60,10 @@ public class LogicalDAG {
             if (!edgesInCycle.isEmpty()) {
                 DualEdge finalCurrentEdge = currentEdge;
                 Set<DualEdge> overlappingEdges = edgesInCycle.stream().filter(
-                        edge -> edge.getSource() == finalCurrentEdge.getSource()
-                                || edge.getSource() == finalCurrentEdge.getTarget()
-                                || edge.getTarget() == finalCurrentEdge.getTarget()
-                                || edge.getTarget() == finalCurrentEdge.getSource()
+                        edge -> edge.getSource().equals(finalCurrentEdge.getSource())
+                                || edge.getSource().equals(finalCurrentEdge.getTarget())
+                                || edge.getTarget().equals(finalCurrentEdge.getTarget())
+                                || edge.getTarget().equals(finalCurrentEdge.getSource())
                 ).collect(Collectors.toSet());
                 if (!overlappingEdges.isEmpty()) {
                     currentEdge = overlappingEdges.iterator().next();
@@ -117,6 +119,8 @@ public class LogicalDAG {
 
         Set<Set<DualEdge>> allCycles = new HashSet<>(cycleBases);
 
+        this.allUndirectedCyclesEnumerated = true;
+
         while (true) {
             Set<Set<DualEdge>> currentBase = new HashSet<>(allCycles);
             currentBase.forEach(i -> {
@@ -143,6 +147,11 @@ public class LogicalDAG {
             });
             if (currentBase.equals(allCycles)) break;
             System.out.println("Merged 1 round.");
+            if (allCycles.size() > 1000) {
+                System.out.println("Too many cycles. Pruning with limited cycle knowledge.");
+                this.allUndirectedCyclesEnumerated = false;
+                break;
+            }
         }
 
         return allCycles.stream().filter(cycle -> cycle.stream().anyMatch(this::isBlockingEdge)).collect(Collectors.toSet());
