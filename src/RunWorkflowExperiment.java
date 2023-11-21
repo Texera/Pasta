@@ -36,6 +36,6 @@ public class RunWorkflowExperiment {
 
         Path outputPath = Paths.get("/Users/xzliu/Desktop/Experiments/Alteryx").resolve(fileName).resolve("seed_" + seed);
 
-        ExperimentRunner.runOSPDSearcher(alteryxDAG, outputPath);
+        ExperimentRunner.runOSPDSearcher(alteryxDAG, outputPath, true);
     }
 }

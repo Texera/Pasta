@@ -146,7 +146,7 @@ public class LogicalDAG {
                 });
             });
             if (currentBase.equals(allCycles)) break;
-            System.out.println("Merged 1 round.");
+//            System.out.println("Merged 1 round.");
             if (allCycles.size() > 1000) {
                 System.out.println("Too many cycles. Pruning with limited cycle knowledge.");
                 this.allUndirectedCyclesEnumerated = false;

@@ -76,7 +76,7 @@ public class AlteryxYXMDParser {
             DualEdge newEdge = dualDAG.addEdge(src, dest);
             Element destEngineSettings = (Element) destNode.getElementsByTagName("EngineSettings").item(0);
             if (destEngineSettings.getAttribute("EngineDllEntryPoint").equals("AlteryxJoin")
-                    && (destination.getAttribute("Connection").equals("Left"))) {
+                    && (destination.getAttribute("Connection").equals("Right"))) {
                 newEdge.setBlkOrMat(true);
             }
             Element srcEngineSettings = (Element) srcNode.getElementsByTagName("EngineSettings").item(0);
