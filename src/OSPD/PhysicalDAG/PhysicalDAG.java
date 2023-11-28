@@ -23,7 +23,12 @@ public class PhysicalDAG {
         this.logicalDAG = logicalDAG;
         this.matLogicalEdges = new HashSet<>(matLogicalEdges);
         assert matLogicalEdges.containsAll(this.logicalDAG.getBlockingEdges());
-        this.cost = this.matLogicalEdges.stream().map(DualEdge::getWeight).reduce(0.0, Double::sum);
+        Set<DualEdge> pipelinedLogicalEdges = new HashSet<>(this.logicalDAG.getDualDAG().edgeSet());
+        pipelinedLogicalEdges.removeAll(this.matLogicalEdges);
+        this.cost = this.matLogicalEdges.stream().map(DualEdge::getWeight).reduce(0.0, Double::sum)
+                - this.logicalDAG.getBlockingEdges().stream().map(DualEdge::getWeight).reduce(0.0, Double::sum);
+//        this.cost = this.matLogicalEdges.stream().map(e -> this.logicalDAG.getMaterializationC2Costs().get(new Pair<>(e.getSource(), e.getTarget()))).reduce(0.0, Double::sum) + pipelinedLogicalEdges.stream().map(e -> this.logicalDAG.getPipeliningC2Costs().get(new Pair<>(e.getSource(), e.getTarget()))).reduce(0.0, Double::sum);
+
     }
 
     public LogicalDAG getLogicalDAG() {

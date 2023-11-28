@@ -1,8 +1,10 @@
 package OSPD.LogicalDAG;
 
+import DualEdgeDAG.AbstractLogicalDAGImageRender;
 import DualEdgeDAG.DualDAGImageRenderer;
 import DualEdgeDAG.DualEdge;
 import OSPD.OSPDUtils;
+import javafx.util.Pair;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.cycle.PatonCycleBase;
 import org.jgrapht.ext.JGraphXAdapter;
@@ -29,7 +31,8 @@ public class LogicalDAG {
     private final Map<DualEdge, Set<Set<DualEdge>>> oppositeUndirectedCycleTraversalNBEdges;
 
     private final Set<Set<DualEdge>> mustMaterializeAtLeastOneEdgeSets;
-
+    private final Map<Pair<Object, Object>, Double> materializationC2Costs = new HashMap<>();
+    private final Map<Pair<Object, Object>, Double> pipeliningC2Costs = new HashMap<>();
     private boolean allUndirectedCyclesEnumerated = false;
 
     public LogicalDAG(DirectedAcyclicGraph<Integer, DualEdge> dualDAG) {
@@ -48,6 +51,7 @@ public class LogicalDAG {
 //        System.out.println("Opposite undirected cycle traversal non-blocking edges: " + this.oppositeUndirectedCycleTraversalNBEdges);
         this.mustMaterializeAtLeastOneEdgeSets = this.oppositeUndirectedCycleTraversalNBEdges.values().parallelStream().flatMap(Set::stream).collect(Collectors.toSet());
 //        System.out.println("Must have at least one materialization in each of the following sets of non-blocking edges: " + this.mustMaterializeAtLeastOneEdgeSets);
+        this.generateC2Costs();
     }
 
     private static LinkedList<DualEdge> getCycleTraversalFromCycleEdgeSet(Set<DualEdge> undirectedCycle) {
@@ -73,6 +77,22 @@ public class LogicalDAG {
             }
         }
         return cycleTraversal;
+    }
+
+    public Map<Pair<Object, Object>, Double> getMaterializationC2Costs() {
+        return materializationC2Costs;
+    }
+
+    public Map<Pair<Object, Object>, Double> getPipeliningC2Costs() {
+        return pipeliningC2Costs;
+    }
+
+    private void generateC2Costs() {
+        Random randomizer = new Random(0);
+        this.getDualDAG().edgeSet().forEach(edge -> {
+            this.materializationC2Costs.put(new Pair<>(edge.getSource(), edge.getTarget()), randomizer.nextDouble() * 100);
+            this.pipeliningC2Costs.put(new Pair<>(edge.getSource(), edge.getTarget()), randomizer.nextDouble() * 100);
+        });
     }
 
     public Set<GraphPath<Integer, DualEdge>> getChains() {
@@ -103,6 +123,12 @@ public class LogicalDAG {
         String blockingEdgeColor = "strokeColor=#CCCC00";
         JGraphXAdapter<Integer, DualEdge> graphAdapter = DualDAGImageRenderer.getGraphAdapter(getDualDAG(), blockingEdgeColor);
         DualDAGImageRenderer.renderDAGToFile(path, graphAdapter);
+    }
+
+    public void renderAbstractDAGToPath(String path) {
+        String blockingEdgeColor = "strokeColor=#b22812";
+        JGraphXAdapter<Integer, DualEdge> graphAdapter = AbstractLogicalDAGImageRender.getGraphAdapter(getDualDAG(), blockingEdgeColor);
+        AbstractLogicalDAGImageRender.renderDAGToFile(path, graphAdapter);
     }
 
     public AsUndirectedGraph<Integer, DualEdge> getUndirectedDualDAG() {

@@ -61,9 +61,9 @@ public class OSPDSearcher {
                     (new DecimalFormat("0.###E0", DecimalFormatSymbols.getInstance(Locale.ROOT)))
                             .format(this.searchSpaceSize)
             );
-            if (this.pruneByChains) System.out.println("Using rule 1: prune by chains.");
-            if (this.pruneBySafeEdges) System.out.println("Using rule 2: prune by safe edges.");
-            if (this.pruneByUnsalvageableStates) System.out.println("Using rule 3: stop at unsalvageable states.");
+            if (this.pruneByUnsalvageableStates) System.out.println("Using optimization 1: stop at hopeless states.");
+            if (this.pruneByChains) System.out.println("Using optimization 2: prune by chains.");
+            if (this.pruneBySafeEdges) System.out.println("Using optimization 3: prune by safe edges.");
         }
 
         if (this.pruneBySafeEdges) {
@@ -132,13 +132,20 @@ public class OSPDSearcher {
             this.searchQueue.add(seedState);
             this.visitedSet.add(seedState);
         }
+
+        if (this.verbose) {
+            System.out.println("Seed is: " + this.searchQueue.peek());
+        }
+
         while (!searchQueue.isEmpty()) {
-//            if (this.verbose) {
-//                if (visitedSet.size() > 1E6) {
-//                    System.out.println(visitedSet.size() + " states visited, exceeds 1,000,000, search terminated early.");
-//                    break;
-//                }
-//            }
+            if (visitedSet.size() > 1E7) {
+                {
+                    if (this.verbose) {
+                        System.out.println(visitedSet.size() + " states visited, exceeds 100,000, search terminated early.");
+                    }
+                }
+                break;
+            }
 
             PhysicalDAG currentState = searchQueue.poll();
             if (currentState.checkSchedulability()) {
@@ -187,9 +194,9 @@ public class OSPDSearcher {
             if (isGreedy) {
                 Optional<PhysicalDAG> bestNeighbor = schedulableNeighbors.stream().max(Comparator.comparingDouble(PhysicalDAG::getCost));
                 if (bestNeighbor.isPresent()) {
-                    if (this.verbose) {
-                        System.out.printf("Best neighbor of %s is %s\n", currentState, bestNeighbor);
-                    }
+//                    if (this.verbose) {
+//                        System.out.printf("Best neighbor of %s is %s\n", currentState, bestNeighbor);
+//                    }
                     searchQueue.add(bestNeighbor.get());
                     visitedSet.add(bestNeighbor.get());
                 }

@@ -74,9 +74,16 @@ public class AlteryxYXMDParser {
             Element srcNode = (Element) alteryxNodesMap.get(src);
             Element destNode = (Element) alteryxNodesMap.get(dest);
             DualEdge newEdge = dualDAG.addEdge(src, dest);
+            Element costTag = (Element) edge.getElementsByTagName("Mat").item(0);
+            if (newEdge != null) {
+                if (costTag != null) {
+                    double cost = Integer.parseInt(costTag.getAttribute("Size"));
+                    dualDAG.setEdgeWeight(newEdge, cost);
+                }
+            }
             Element destEngineSettings = (Element) destNode.getElementsByTagName("EngineSettings").item(0);
             if (destEngineSettings.getAttribute("EngineDllEntryPoint").equals("AlteryxJoin")
-                    && (destination.getAttribute("Connection").equals("Right"))) {
+                    && (destination.getAttribute("Connection").equals("Left"))) {
                 newEdge.setBlkOrMat(true);
             }
             Element srcEngineSettings = (Element) srcNode.getElementsByTagName("EngineSettings").item(0);

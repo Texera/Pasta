@@ -1,6 +1,7 @@
 import DualEdgeDAG.DualEdge;
 import ExperimentRunner.ExperimentRunner;
 import WorkflowParser.AlteryxYXMDParser;
+import WorkflowParser.KNIMESummaryXMLParser;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import java.nio.file.Path;
@@ -24,18 +25,31 @@ public class RunWorkflowExperiment {
             return;
         }
 
-        DirectedAcyclicGraph<Integer, DualEdge> alteryxDAG = AlteryxYXMDParser.parseYXMD(inputWorkflowPath);
+        DirectedAcyclicGraph<Integer, DualEdge> workflowDAG;
+        String fileType = inputWorkflowPath.substring(inputWorkflowPath.lastIndexOf(".") + 1);
+        if (fileType.equals("yxmd")) {
+            workflowDAG = AlteryxYXMDParser.parseYXMD(inputWorkflowPath);
+        } else {
+            workflowDAG = KNIMESummaryXMLParser.parseKNIMEXML(inputWorkflowPath);
+        }
+
         String fileName = Paths.get(inputWorkflowPath).getFileName().toString();
 
         if (randomWeight) {
             Random randomizer = new Random(seed);
-            alteryxDAG.edgeSet().forEach(edge -> {
-                alteryxDAG.setEdgeWeight(edge, randomizer.nextDouble() * 100);
+            workflowDAG.edgeSet().forEach(edge -> {
+                workflowDAG.setEdgeWeight(edge, randomizer.nextDouble() * 100);
             });
         }
 
-        Path outputPath = Paths.get("/Users/xzliu/Desktop/Experiments/Alteryx").resolve(fileName).resolve("seed_" + seed);
+        Path outputPath;
 
-        ExperimentRunner.runOSPDSearcher(alteryxDAG, outputPath, true);
+        if (randomWeight) {
+            outputPath = Paths.get("/Users/xzliu/Desktop/Experiments").resolve(fileType).resolve(fileName).resolve("seed_" + seed);
+        } else {
+            outputPath = Paths.get("/Users/xzliu/Desktop/Experiments").resolve(fileType).resolve(fileName).resolve("realCost");
+        }
+
+        ExperimentRunner.runOSPDSearcher(workflowDAG, outputPath, true);
     }
 }

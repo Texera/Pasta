@@ -28,6 +28,7 @@ public class ExperimentRunner {
         long elapsedTime = endTime - startTime;
         System.out.println("Initializing the logical DAG took: " + elapsedTime + " ms");
         logicalDAG.renderDAGImageToPath(outputPath.resolve("input_logical_DAG.png").toString());
+        logicalDAG.renderAbstractDAGToPath(outputPath.resolve("abstract_input_logical_DAG.png").toString());
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
@@ -58,7 +59,7 @@ public class ExperimentRunner {
         startTime = System.currentTimeMillis();
         OSPDSearcher ospdSearcherRule23 = new OSPDSearcher(logicalDAG, verbose);
         ospdSearcherRule23.setPruneBySafeEdges(true);
-        ospdSearcherRule23.setPruneByUnsalvageableStates(true);
+        ospdSearcherRule23.setPruneByChains(true);
         PhysicalDAG ospd23 = ospdSearcherRule23.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
@@ -68,8 +69,8 @@ public class ExperimentRunner {
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
         OSPDSearcher ospdSearcherRule13 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule13.setPruneByChains(true);
         ospdSearcherRule13.setPruneByUnsalvageableStates(true);
+        ospdSearcherRule13.setPruneBySafeEdges(true);
         PhysicalDAG ospd13 = ospdSearcherRule13.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
@@ -78,8 +79,8 @@ public class ExperimentRunner {
 
         startTime = System.currentTimeMillis();
         OSPDSearcher ospdSearcherRule12 = new OSPDSearcher(logicalDAG, verbose);
+        ospdSearcherRule12.setPruneByUnsalvageableStates(true);
         ospdSearcherRule12.setPruneByChains(true);
-        ospdSearcherRule12.setPruneBySafeEdges(true);
         PhysicalDAG ospd12 = ospdSearcherRule12.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
@@ -89,7 +90,7 @@ public class ExperimentRunner {
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
         OSPDSearcher ospdSearcherRule2 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule2.setPruneBySafeEdges(true);
+        ospdSearcherRule2.setPruneByChains(true);
         PhysicalDAG ospd2 = ospdSearcherRule2.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
@@ -98,23 +99,23 @@ public class ExperimentRunner {
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
+        OSPDSearcher ospdSearcherRule3 = new OSPDSearcher(logicalDAG, verbose);
+        ospdSearcherRule3.setPruneBySafeEdges(true);
+        PhysicalDAG ospd3 = ospdSearcherRule3.execute();
+        endTime = System.currentTimeMillis();
+        elapsedTime = endTime - startTime;
+        System.out.println("Using rule 3 took: " + elapsedTime + " ms");
+        ospd3.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_3.png").toString());
+
+        System.out.println(System.lineSeparator());
+        startTime = System.currentTimeMillis();
         OSPDSearcher ospdSearcherRule1 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule1.setPruneByChains(true);
+        ospdSearcherRule1.setPruneByUnsalvageableStates(true);
         PhysicalDAG ospd1 = ospdSearcherRule1.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
         System.out.println("Using rule 1 took: " + elapsedTime + " ms");
         ospd1.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1.png").toString());
-
-        System.out.println(System.lineSeparator());
-        startTime = System.currentTimeMillis();
-        OSPDSearcher ospdSearcherRule3 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule3.setPruneByUnsalvageableStates(true);
-        PhysicalDAG ospd3 = ospdSearcherRule3.execute();
-        endTime = System.currentTimeMillis();
-        elapsedTime = endTime - startTime;
-        System.out.println("Using rule 3 took: " + elapsedTime + " ms");
-        ospd1.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_3.png").toString());
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
