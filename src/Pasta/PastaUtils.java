@@ -1,7 +1,7 @@
-package OSPD;
+package Pasta;
 
 import DualEdgeDAG.DualEdge;
-import OSPD.PhysicalDAG.SchedulabilityChecker;
+import Pasta.ExecutionPlan.SchedulabilityChecker;
 import javafx.util.Pair;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.AllDirectedPaths;
@@ -11,7 +11,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class OSPDUtils {
+public class PastaUtils {
 
     public static Double getCost(Set<DualEdge> currentState) {
         return currentState.stream().map(DualEdge::getWeight).reduce(0.0, Double::sum);

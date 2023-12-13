@@ -1,9 +1,9 @@
-package OSPD.LogicalDAG;
+package Pasta.PhysicalPlan;
 
-import DualEdgeDAG.AbstractLogicalDAGImageRender;
+import DualEdgeDAG.AbstractPhysicalPlanDAGImageRender;
 import DualEdgeDAG.DualDAGImageRenderer;
 import DualEdgeDAG.DualEdge;
-import OSPD.OSPDUtils;
+import Pasta.PastaUtils;
 import javafx.util.Pair;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.cycle.PatonCycleBase;
@@ -14,7 +14,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class LogicalDAG {
+public class PhysicalPlan {
     private final DirectedAcyclicGraph<Integer, DualEdge> dualDAG;
     private final Set<DualEdge> blockingEdges;
 
@@ -35,11 +35,11 @@ public class LogicalDAG {
     private final Map<Pair<Object, Object>, Double> pipeliningC2Costs = new HashMap<>();
     private boolean allUndirectedCyclesEnumerated = false;
 
-    public LogicalDAG(DirectedAcyclicGraph<Integer, DualEdge> dualDAG) {
+    public PhysicalPlan(DirectedAcyclicGraph<Integer, DualEdge> dualDAG) {
         this.dualDAG = dualDAG;
         this.blockingEdges = this.dualDAG.edgeSet().stream().filter(DualEdge::isBlkOrMat).collect(Collectors.toSet());
         this.nonBlockingEdges = this.dualDAG.edgeSet().stream().filter(e -> !e.isBlkOrMat()).collect(Collectors.toSet());
-        this.chains = OSPDUtils.getChainPaths(this.dualDAG);
+        this.chains = PastaUtils.getChainPaths(this.dualDAG);
         this.undirectedDualDAG = new AsUndirectedGraph<>(dualDAG);
         this.undirectedCycleBases = findUndirectedCycleBases();
 //        System.out.println("Undirected cycle bases are:" + undirectedCycleBases);
@@ -127,8 +127,8 @@ public class LogicalDAG {
 
     public void renderAbstractDAGToPath(String path) {
         String blockingEdgeColor = "strokeColor=#b22812";
-        JGraphXAdapter<Integer, DualEdge> graphAdapter = AbstractLogicalDAGImageRender.getGraphAdapter(getDualDAG(), blockingEdgeColor);
-        AbstractLogicalDAGImageRender.renderDAGToFile(path, graphAdapter);
+        JGraphXAdapter<Integer, DualEdge> graphAdapter = AbstractPhysicalPlanDAGImageRender.getGraphAdapter(getDualDAG(), blockingEdgeColor);
+        AbstractPhysicalPlanDAGImageRender.renderDAGToFile(path, graphAdapter);
     }
 
     public AsUndirectedGraph<Integer, DualEdge> getUndirectedDualDAG() {
@@ -266,7 +266,7 @@ public class LogicalDAG {
 
     @Override
     public String toString() {
-        return "OSPD.LogicalDAG{" +
+        return "Pasta.PhysicalPlan{" +
                 "dualDAG=" + dualDAG +
                 ", blockingEdges=" + blockingEdges +
                 '}';
@@ -275,8 +275,8 @@ public class LogicalDAG {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof LogicalDAG)) return false;
-        LogicalDAG that = (LogicalDAG) o;
+        if (!(o instanceof PhysicalPlan)) return false;
+        PhysicalPlan that = (PhysicalPlan) o;
         return Objects.equals(getDualDAG(), that.getDualDAG());
     }
 }

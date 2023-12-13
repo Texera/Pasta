@@ -1,7 +1,7 @@
 package Deprecated;
 
 import DualEdgeDAG.DualEdge;
-import OSPD.OSPDUtils;
+import Pasta.PastaUtils;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 import org.jgrapht.GraphPath;
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public class OSPDGenerator {
     static Pair<Double, Set<DualEdge>> generateOSPD(DirectedAcyclicGraph<Integer, DualEdge> dag) {
-        Set<GraphPath<Integer, DualEdge>> candidatePaths = OSPDUtils.getMinimalProblematicPaths(dag);
+        Set<GraphPath<Integer, DualEdge>> candidatePaths = PastaUtils.getMinimalProblematicPaths(dag);
         List<Set<DualEdge>> edgeSets = candidatePaths.stream().map(p -> new HashSet<DualEdge>(p.getEdgeList())).collect(Collectors.toList());
         Set<List<DualEdge>> cp = Sets.cartesianProduct(edgeSets);
         Set<Set<DualEdge>> candidates = cp.stream().map(HashSet::new).collect(Collectors.toSet());
@@ -22,8 +22,8 @@ public class OSPDGenerator {
         Pair<Double, Set<DualEdge>> optimum = new Pair<Double, Set<DualEdge>>(Double.MAX_VALUE, new HashSet<DualEdge>());
         Set<Set<DualEdge>> invalidSolutions = new HashSet<Set<DualEdge>>();
         for (Set<DualEdge> candidate : candidates) {
-            if (OSPDUtils.testStateValidity(dag, candidate)) {
-                Double cost = OSPDUtils.getCost(candidate);
+            if (PastaUtils.testStateValidity(dag, candidate)) {
+                Double cost = PastaUtils.getCost(candidate);
                 if (cost < optimum.getKey()) {
                     optimum = new Pair<Double, Set<DualEdge>>(cost, candidate);
                 }

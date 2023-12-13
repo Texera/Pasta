@@ -1,7 +1,7 @@
 package Deprecated;
 
 import DualEdgeDAG.DualEdge;
-import OSPD.OSPDUtils;
+import Pasta.PastaUtils;
 import javafx.util.Pair;
 import org.jgrapht.GraphPath;
 import org.jgrapht.graph.DirectedAcyclicGraph;
@@ -18,7 +18,7 @@ public class OSPDSearcherOld {
         Set<DualEdge> pipelinedEdges = dag.edgeSet().stream().filter(e -> !e.isBlkOrMat()).collect(Collectors.toSet());
         BigDecimal spaceSize = BigDecimal.valueOf((1L << pipelinedEdges.size()));
         System.out.println("All Pipelined Edges (" + pipelinedEdges.size() + ", " + spaceSize + " states in the search space)" + "): " + pipelinedEdges);
-        Set<Integer> blockedVertices = OSPDUtils.getBlockedVertices(dag);
+        Set<Integer> blockedVertices = PastaUtils.getBlockedVertices(dag);
         Iterator<DualEdge> edgeIterator = pipelinedEdges.iterator();
         while (edgeIterator.hasNext()) {
             DualEdge e = edgeIterator.next();
@@ -31,8 +31,8 @@ public class OSPDSearcherOld {
             }
         }
         System.out.println("After pruning by no-problem edges (" + pipelinedEdges.size() + "): " + pipelinedEdges);
-        Set<Set<DualEdge>> mustBreakPaths = OSPDUtils.getMinimalProblematicPaths(dag).stream().map(p -> new HashSet<DualEdge>(p.getEdgeList())).collect(Collectors.toSet());
-        Set<GraphPath<Integer, DualEdge>> chainPaths = OSPDUtils.getChainPaths(dag);
+        Set<Set<DualEdge>> mustBreakPaths = PastaUtils.getMinimalProblematicPaths(dag).stream().map(p -> new HashSet<DualEdge>(p.getEdgeList())).collect(Collectors.toSet());
+        Set<GraphPath<Integer, DualEdge>> chainPaths = PastaUtils.getChainPaths(dag);
         System.out.println("Chains are: " + chainPaths);
         Set<Set<DualEdge>> chainPathSets = chainPaths.stream().map(p -> new HashSet<DualEdge>(p.getEdgeList())).collect(Collectors.toSet());
         Pair<Double, Set<DualEdge>> optimum = new Pair<Double, Set<DualEdge>>(Double.MAX_VALUE, new HashSet<DualEdge>());
@@ -45,9 +45,9 @@ public class OSPDSearcherOld {
             if (!visited.contains(currentState)) {
                 visited.add(currentState);
                 // TODO: Test validity
-                if (OSPDUtils.testStateValidity(dag, currentState)) {
+                if (PastaUtils.testStateValidity(dag, currentState)) {
                     // TODO: If valid, get cost
-                    Double cost = OSPDUtils.getCost(currentState);
+                    Double cost = PastaUtils.getCost(currentState);
                     if (cost < optimum.getKey()) {
                         optimum = new Pair<Double, Set<DualEdge>>(cost, currentState);
                     }

@@ -1,8 +1,8 @@
-package OSPD;
+package Pasta;
 
 import DualEdgeDAG.DualEdge;
-import OSPD.LogicalDAG.LogicalDAG;
-import OSPD.PhysicalDAG.PhysicalDAG;
+import Pasta.ExecutionPlan.ExecutionPlan;
+import Pasta.PhysicalPlan.PhysicalPlan;
 import com.google.common.collect.Sets;
 
 import java.math.BigInteger;
@@ -10,89 +10,89 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 
-public class OSPDSearcher {
-    private final LogicalDAG inputLogicalDAG;
+public class PastaFinder {
+    private final PhysicalPlan inputPhysicalPlan;
     private final BigInteger searchSpaceSize;
-    private final LinkedList<PhysicalDAG> searchQueue = new LinkedList<>();
-    private final HashSet<PhysicalDAG> visitedSet = new HashSet<>();
+    private final LinkedList<ExecutionPlan> searchQueue = new LinkedList<>();
+    private final HashSet<ExecutionPlan> visitedSet = new HashSet<>();
 
-    private final HashSet<PhysicalDAG> hopelessStates = new HashSet<>();
+    private final HashSet<ExecutionPlan> hopelessStates = new HashSet<>();
 
     private final boolean edgeIndependentCost = true;
     private final boolean verbose;
-    private PhysicalDAG seedState;
-    private PhysicalDAG OSPD;
+    private ExecutionPlan seedState;
+    private ExecutionPlan goalState;
     private boolean pruneByChains = false;
     private boolean pruneBySafeEdges = false;
     private boolean pruneByUnsalvageableStates = false;
     private boolean isGreedy = false;
 
-    public OSPDSearcher(LogicalDAG inputLogicalDAG, boolean verbose) {
-        this.inputLogicalDAG = inputLogicalDAG;
-        this.seedState = new PhysicalDAG(inputLogicalDAG, inputLogicalDAG.getDualDAG().edgeSet());
-        int numNBEdges = this.inputLogicalDAG.getDualDAG().edgeSet().size() - this.inputLogicalDAG.getBlockingEdges().size();
+    public PastaFinder(PhysicalPlan inputPhysicalPlan, boolean verbose) {
+        this.inputPhysicalPlan = inputPhysicalPlan;
+        this.seedState = new ExecutionPlan(inputPhysicalPlan, inputPhysicalPlan.getDualDAG().edgeSet());
+        int numNBEdges = this.inputPhysicalPlan.getDualDAG().edgeSet().size() - this.inputPhysicalPlan.getBlockingEdges().size();
         this.searchSpaceSize = BigInteger.valueOf(2).pow(numNBEdges);
         this.verbose = verbose;
         if (this.verbose) {
-            System.out.printf("Input logical DAG has %d edges, among which %d are blocking edges, and %d are non-blocking edges.%n",
-                    this.inputLogicalDAG.getDualDAG().edgeSet().size(),
-                    this.inputLogicalDAG.getBlockingEdges().size(),
+            System.out.printf("Input physical plan DAG has %d edges, among which %d are blocking edges, and %d are non-blocking edges.%n",
+                    this.inputPhysicalPlan.getDualDAG().edgeSet().size(),
+                    this.inputPhysicalPlan.getBlockingEdges().size(),
                     numNBEdges);
         }
     }
 
-    public PhysicalDAG execute() {
-        PhysicalDAG allNonBlockingPipelinedState = new PhysicalDAG(inputLogicalDAG, inputLogicalDAG.getBlockingEdges());
+    public ExecutionPlan execute() {
+        ExecutionPlan allNonBlockingPipelinedState = new ExecutionPlan(inputPhysicalPlan, inputPhysicalPlan.getBlockingEdges());
         if (allNonBlockingPipelinedState.checkSchedulability()) {
-            this.OSPD = allNonBlockingPipelinedState;
+            this.goalState = allNonBlockingPipelinedState;
             if (this.verbose)
-                System.out.println(this.inputLogicalDAG + " is natively schedulable. Search skipped.");
+                System.out.println(this.inputPhysicalPlan + " is natively schedulable. Search skipped.");
         } else {
             executeSearch();
         }
-        return this.OSPD;
+        return this.goalState;
     }
 
     public void executeSearch() {
         if (this.verbose) {
-            System.out.println("Starting search for logical DAG: " + this.inputLogicalDAG);
+            System.out.println("Starting search for physical plan DAG: " + this.inputPhysicalPlan);
             System.out.printf("Complete search-space size: %s, i.e., %s.\n",
                     (new DecimalFormat("#,###")).format(this.searchSpaceSize),
                     (new DecimalFormat("0.###E0", DecimalFormatSymbols.getInstance(Locale.ROOT)))
                             .format(this.searchSpaceSize)
             );
-            if (this.pruneByUnsalvageableStates) System.out.println("Using optimization 1: stop at hopeless states.");
-            if (this.pruneByChains) System.out.println("Using optimization 2: prune by chains.");
-            if (this.pruneBySafeEdges) System.out.println("Using optimization 3: prune by safe edges.");
+            if (this.pruneByUnsalvageableStates) System.out.println("Using optimization 2: stop at hopeless states.");
+            if (this.pruneByChains) System.out.println("Using optimization 3: prune by chains.");
+            if (this.pruneBySafeEdges) System.out.println("Using optimization 4: prune by safe edges.");
         }
 
         if (this.pruneBySafeEdges) {
-            Set<DualEdge> modifiedSeedStateMaterializedEdges = this.seedState.getMatLogicalEdges();
-            modifiedSeedStateMaterializedEdges.removeAll(this.inputLogicalDAG.getSafeEdges());
-            this.seedState = new PhysicalDAG(this.inputLogicalDAG, modifiedSeedStateMaterializedEdges);
+            Set<DualEdge> modifiedSeedStateMaterializedEdges = this.seedState.getMaterializedPhysicalPlanEdges();
+            modifiedSeedStateMaterializedEdges.removeAll(this.inputPhysicalPlan.getSafeEdges());
+            this.seedState = new ExecutionPlan(this.inputPhysicalPlan, modifiedSeedStateMaterializedEdges);
         }
 
-        this.OSPD = this.seedState;
+        this.goalState = this.seedState;
         this.searchQueue.clear();
         this.visitedSet.clear();
         if (this.pruneByChains) {
             if (this.verbose) {
-                System.out.println("Chains are: " + OSPDUtils.getChainPaths(inputLogicalDAG.getDualDAG()));
+                System.out.println("Chains are: " + PastaUtils.getChainPaths(inputPhysicalPlan.getDualDAG()));
             }
-            Set<DualEdge> modifiedSeedStateMatEdges = new HashSet<>(this.seedState.getMatLogicalEdges());
+            Set<DualEdge> modifiedSeedStateMatEdges = new HashSet<>(this.seedState.getMaterializedPhysicalPlanEdges());
             List<Set<DualEdge>> zeroBlockingChains = new LinkedList<>();
-            this.inputLogicalDAG.getChains().forEach(chain -> {
+            this.inputPhysicalPlan.getChains().forEach(chain -> {
                 List<DualEdge> chainEdgeList = chain.getEdgeList();
-                if (chainEdgeList.stream().anyMatch(this.inputLogicalDAG::isBlockingEdge)) {
+                if (chainEdgeList.stream().anyMatch(this.inputPhysicalPlan::isBlockingEdge)) {
                     // A chain with at least one blocking edge does not need materialization on any non-blocking edges.
-                    chainEdgeList.stream().filter(e -> !this.inputLogicalDAG.isBlockingEdge(e)).forEach(modifiedSeedStateMatEdges::remove);
+                    chainEdgeList.stream().filter(e -> !this.inputPhysicalPlan.isBlockingEdge(e)).forEach(modifiedSeedStateMatEdges::remove);
                 } else {
                     // A chain with no blocking edge needs at most one materialization on a non-blocking edge.
                     // Remove this chain from the materialized edges first.
                     chainEdgeList.forEach(modifiedSeedStateMatEdges::remove);
                     if (this.pruneBySafeEdges) {
                         List<DualEdge> nonSafeChangeEdgeList = new LinkedList<>(chainEdgeList);
-                        nonSafeChangeEdgeList.removeAll(this.inputLogicalDAG.getSafeEdges());
+                        nonSafeChangeEdgeList.removeAll(this.inputPhysicalPlan.getSafeEdges());
                         if (!nonSafeChangeEdgeList.isEmpty())
                             zeroBlockingChains.add(new HashSet<>(nonSafeChangeEdgeList));
                     } else {
@@ -105,11 +105,11 @@ public class OSPDSearcher {
                 zeroBlockingChains.forEach(c -> {
                     Optional<DualEdge> minEdge = c.stream().min(Comparator.comparingDouble(DualEdge::getWeight));
                     minEdge.ifPresent(minE -> {
-                        if (!this.inputLogicalDAG.getSafeEdges().contains(minE))
+                        if (!this.inputPhysicalPlan.getSafeEdges().contains(minE))
                             newStateMatEdges.add(minE);
                     });
                 });
-                PhysicalDAG newState = new PhysicalDAG(this.inputLogicalDAG, newStateMatEdges);
+                ExecutionPlan newState = new ExecutionPlan(this.inputPhysicalPlan, newStateMatEdges);
                 this.searchQueue.add(newState);
                 this.visitedSet.add(newState);
                 if (this.verbose) {
@@ -120,7 +120,7 @@ public class OSPDSearcher {
                 combinations.forEach(c -> {
                     Set<DualEdge> newStateMatEdges = new HashSet<>(modifiedSeedStateMatEdges);
                     newStateMatEdges.addAll(c);
-                    PhysicalDAG newState = new PhysicalDAG(this.inputLogicalDAG, newStateMatEdges);
+                    ExecutionPlan newState = new ExecutionPlan(this.inputPhysicalPlan, newStateMatEdges);
                     if (this.verbose) {
                         System.out.println("Combination: " + c + ", state: " + newState);
                     }
@@ -147,20 +147,20 @@ public class OSPDSearcher {
                 break;
             }
 
-            PhysicalDAG currentState = searchQueue.poll();
+            ExecutionPlan currentState = searchQueue.poll();
             if (currentState.checkSchedulability()) {
-                if (currentState.getCost() < this.OSPD.getCost()) {
-                    this.OSPD = currentState;
+                if (currentState.getCost() < this.goalState.getCost()) {
+                    this.goalState = currentState;
                 }
             } else if (this.pruneByUnsalvageableStates) {
-                if (this.inputLogicalDAG.getMustMaterializeAtLeastOneEdgeSets().stream().anyMatch(edgeSet -> edgeSet.stream().noneMatch(e -> currentState.getMatLogicalEdges().contains(e)))) {
+                if (this.inputPhysicalPlan.getMustMaterializeAtLeastOneEdgeSets().stream().anyMatch(edgeSet -> edgeSet.stream().noneMatch(e -> currentState.getMaterializedPhysicalPlanEdges().contains(e)))) {
                     // All its neighbors are hopeless
                     this.hopelessStates.add(currentState);
-                    currentState.getMatLogicalEdges().forEach(lEdge -> {
-                        if (!this.inputLogicalDAG.isBlockingEdge(lEdge)) {
-                            Set<DualEdge> neighborStateMaterializedEdges = new HashSet<>(currentState.getMatLogicalEdges());
+                    currentState.getMaterializedPhysicalPlanEdges().forEach(lEdge -> {
+                        if (!this.inputPhysicalPlan.isBlockingEdge(lEdge)) {
+                            Set<DualEdge> neighborStateMaterializedEdges = new HashSet<>(currentState.getMaterializedPhysicalPlanEdges());
                             neighborStateMaterializedEdges.remove(lEdge);
-                            PhysicalDAG neighborState = new PhysicalDAG(currentState.getLogicalDAG(), neighborStateMaterializedEdges);
+                            ExecutionPlan neighborState = new ExecutionPlan(currentState.getPhysicalPlan(), neighborStateMaterializedEdges);
                             this.hopelessStates.add(neighborState);
                         }
                     });
@@ -168,12 +168,12 @@ public class OSPDSearcher {
                 }
             }
 
-            List<PhysicalDAG> schedulableNeighbors = new LinkedList<>();
-            currentState.getMatLogicalEdges().forEach(lEdge -> {
-                if (!this.inputLogicalDAG.isBlockingEdge(lEdge)) {
-                    Set<DualEdge> neighborStateMaterializedEdges = new HashSet<>(currentState.getMatLogicalEdges());
+            List<ExecutionPlan> schedulableNeighbors = new LinkedList<>();
+            currentState.getMaterializedPhysicalPlanEdges().forEach(lEdge -> {
+                if (!this.inputPhysicalPlan.isBlockingEdge(lEdge)) {
+                    Set<DualEdge> neighborStateMaterializedEdges = new HashSet<>(currentState.getMaterializedPhysicalPlanEdges());
                     neighborStateMaterializedEdges.remove(lEdge);
-                    PhysicalDAG neighborState = new PhysicalDAG(currentState.getLogicalDAG(), neighborStateMaterializedEdges);
+                    ExecutionPlan neighborState = new ExecutionPlan(currentState.getPhysicalPlan(), neighborStateMaterializedEdges);
                     if (!visitedSet.contains(neighborState)) {
                         if (this.isGreedy) {
                             if (neighborState.checkSchedulability()) {
@@ -192,7 +192,7 @@ public class OSPDSearcher {
                 }
             });
             if (isGreedy) {
-                Optional<PhysicalDAG> bestNeighbor = schedulableNeighbors.stream().max(Comparator.comparingDouble(PhysicalDAG::getCost));
+                Optional<ExecutionPlan> bestNeighbor = schedulableNeighbors.stream().max(Comparator.comparingDouble(ExecutionPlan::getCost));
                 if (bestNeighbor.isPresent()) {
 //                    if (this.verbose) {
 //                        System.out.printf("Best neighbor of %s is %s\n", currentState, bestNeighbor);
@@ -204,8 +204,8 @@ public class OSPDSearcher {
         }
         if (this.verbose) {
             System.out.println("Number of states visited: " + visitedSet.size());
-            System.out.println("OSPD: " + this.OSPD);
-            this.OSPD.showSchedulability();
+            System.out.println("Goal State: " + this.goalState);
+            this.goalState.showSchedulability();
         }
     }
 

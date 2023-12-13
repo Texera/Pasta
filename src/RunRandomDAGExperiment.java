@@ -46,7 +46,7 @@ public class RunRandomDAGExperiment {
         graphGenerator.generateDualGraph(randomDAGWithCost);
         Path outputPath = Paths.get(String.format("/Users/xzliu/Desktop/Experiments/v%s_e%s_s%s_pB%s_fC_%s_pFC%s", numVertices, numEdges, seed, pBEdge, forceChain, pForceChain));
 
-        ExperimentRunner.runOSPDSearcher(randomDAGWithCost, outputPath, true);
+        ExperimentRunner.runOptimalExecutionPlanFinder(randomDAGWithCost, outputPath, true);
     }
 
 }

@@ -1,9 +1,9 @@
 package ExperimentRunner;
 
 import DualEdgeDAG.DualEdge;
-import OSPD.LogicalDAG.LogicalDAG;
-import OSPD.OSPDSearcher;
-import OSPD.PhysicalDAG.PhysicalDAG;
+import Pasta.ExecutionPlan.ExecutionPlan;
+import Pasta.PastaFinder;
+import Pasta.PhysicalPlan.PhysicalPlan;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import java.io.IOException;
@@ -11,7 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class ExperimentRunner {
-    public static void runOSPDSearcher(DirectedAcyclicGraph<Integer, DualEdge> inputLogicalDAG, Path outputPath, boolean verbose) {
+    public static void runOptimalExecutionPlanFinder(DirectedAcyclicGraph<Integer, DualEdge> inputPhysicalPlan, Path outputPath, boolean verbose) {
 
         if (!Files.exists(outputPath)) {
             try {
@@ -23,21 +23,21 @@ public class ExperimentRunner {
 
 
         long startTime = System.currentTimeMillis();
-        LogicalDAG logicalDAG = new LogicalDAG(inputLogicalDAG);
+        PhysicalPlan physicalPlan = new PhysicalPlan(inputPhysicalPlan);
         long endTime = System.currentTimeMillis();
         long elapsedTime = endTime - startTime;
-        System.out.println("Initializing the logical DAG took: " + elapsedTime + " ms");
-        logicalDAG.renderDAGImageToPath(outputPath.resolve("input_logical_DAG.png").toString());
-        logicalDAG.renderAbstractDAGToPath(outputPath.resolve("abstract_input_logical_DAG.png").toString());
+        System.out.println("Initializing the physical plan took: " + elapsedTime + " ms");
+        physicalPlan.renderDAGImageToPath(outputPath.resolve("input_physical_plan.png").toString());
+        physicalPlan.renderAbstractDAGToPath(outputPath.resolve("abstract_input_physical_plan.png").toString());
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
-        OSPDSearcher greedySearcher = new OSPDSearcher(logicalDAG, verbose);
+        PastaFinder greedySearcher = new PastaFinder(physicalPlan, verbose);
         greedySearcher.setPruneByChains(true);
         greedySearcher.setPruneBySafeEdges(true);
         greedySearcher.setPruneByUnsalvageableStates(true);
         greedySearcher.setGreedy(true);
-        PhysicalDAG greedyOptimum = greedySearcher.execute();
+        ExecutionPlan greedyOptimum = greedySearcher.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
         System.out.println("Using greedy took: " + elapsedTime + " ms");
@@ -45,85 +45,85 @@ public class ExperimentRunner {
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
-        OSPDSearcher ospdSearcherRule123 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule123.setPruneByChains(true);
-        ospdSearcherRule123.setPruneBySafeEdges(true);
-        ospdSearcherRule123.setPruneByUnsalvageableStates(true);
-        PhysicalDAG ospd123 = ospdSearcherRule123.execute();
+        PastaFinder pastaFinderRule123 = new PastaFinder(physicalPlan, verbose);
+        pastaFinderRule123.setPruneByChains(true);
+        pastaFinderRule123.setPruneBySafeEdges(true);
+        pastaFinderRule123.setPruneByUnsalvageableStates(true);
+        ExecutionPlan oep123 = pastaFinderRule123.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
         System.out.println("Using all three rules took: " + elapsedTime + " ms");
-        ospd123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2_3.png").toString());
+        oep123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2_3.png").toString());
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
-        OSPDSearcher ospdSearcherRule23 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule23.setPruneBySafeEdges(true);
-        ospdSearcherRule23.setPruneByChains(true);
-        PhysicalDAG ospd23 = ospdSearcherRule23.execute();
+        PastaFinder pastaFinderRule23 = new PastaFinder(physicalPlan, verbose);
+        pastaFinderRule23.setPruneBySafeEdges(true);
+        pastaFinderRule23.setPruneByChains(true);
+        ExecutionPlan oep23 = pastaFinderRule23.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
         System.out.println("Using rule 2 and 3 took: " + elapsedTime + " ms");
-        ospd23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2_3.png").toString());
+        oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2_3.png").toString());
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
-        OSPDSearcher ospdSearcherRule13 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule13.setPruneByUnsalvageableStates(true);
-        ospdSearcherRule13.setPruneBySafeEdges(true);
-        PhysicalDAG ospd13 = ospdSearcherRule13.execute();
+        PastaFinder pastaFinderRule13 = new PastaFinder(physicalPlan, verbose);
+        pastaFinderRule13.setPruneByUnsalvageableStates(true);
+        pastaFinderRule13.setPruneBySafeEdges(true);
+        ExecutionPlan oep13 = pastaFinderRule13.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
         System.out.println("Using rule 1 and 3 took: " + elapsedTime + " ms");
-        ospd23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_3.png").toString());
+        oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_3.png").toString());
 
         startTime = System.currentTimeMillis();
-        OSPDSearcher ospdSearcherRule12 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule12.setPruneByUnsalvageableStates(true);
-        ospdSearcherRule12.setPruneByChains(true);
-        PhysicalDAG ospd12 = ospdSearcherRule12.execute();
+        PastaFinder pastaFinderRule12 = new PastaFinder(physicalPlan, verbose);
+        pastaFinderRule12.setPruneByUnsalvageableStates(true);
+        pastaFinderRule12.setPruneByChains(true);
+        ExecutionPlan oep12 = pastaFinderRule12.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
         System.out.println("Using rule 1 and 2 took: " + elapsedTime + " ms");
-        ospd12.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2.png").toString());
+        oep12.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2.png").toString());
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
-        OSPDSearcher ospdSearcherRule2 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule2.setPruneByChains(true);
-        PhysicalDAG ospd2 = ospdSearcherRule2.execute();
+        PastaFinder pastaFinderRule2 = new PastaFinder(physicalPlan, verbose);
+        pastaFinderRule2.setPruneByChains(true);
+        ExecutionPlan oep2 = pastaFinderRule2.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
         System.out.println("Using rule 2 took: " + elapsedTime + " ms");
-        ospd2.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2.png").toString());
+        oep2.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2.png").toString());
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
-        OSPDSearcher ospdSearcherRule3 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule3.setPruneBySafeEdges(true);
-        PhysicalDAG ospd3 = ospdSearcherRule3.execute();
+        PastaFinder pastaFinderRule3 = new PastaFinder(physicalPlan, verbose);
+        pastaFinderRule3.setPruneBySafeEdges(true);
+        ExecutionPlan oep3 = pastaFinderRule3.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
         System.out.println("Using rule 3 took: " + elapsedTime + " ms");
-        ospd3.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_3.png").toString());
+        oep3.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_3.png").toString());
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
-        OSPDSearcher ospdSearcherRule1 = new OSPDSearcher(logicalDAG, verbose);
-        ospdSearcherRule1.setPruneByUnsalvageableStates(true);
-        PhysicalDAG ospd1 = ospdSearcherRule1.execute();
+        PastaFinder pastaFinderRule1 = new PastaFinder(physicalPlan, verbose);
+        pastaFinderRule1.setPruneByUnsalvageableStates(true);
+        ExecutionPlan oep1 = pastaFinderRule1.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
         System.out.println("Using rule 1 took: " + elapsedTime + " ms");
-        ospd1.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1.png").toString());
+        oep1.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1.png").toString());
 
         System.out.println(System.lineSeparator());
         startTime = System.currentTimeMillis();
-        OSPDSearcher ospdSearcherBaseline = new OSPDSearcher(logicalDAG, verbose);
-        PhysicalDAG ospdOfBaseline = ospdSearcherBaseline.execute();
+        PastaFinder pastaFinderBaseline = new PastaFinder(physicalPlan, verbose);
+        ExecutionPlan oepOfBaseline = pastaFinderBaseline.execute();
         endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
         System.out.println("Baseline search took: " + elapsedTime + " ms");
-        ospdOfBaseline.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_baseline.png").toString());
+        oepOfBaseline.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_baseline.png").toString());
     }
 }

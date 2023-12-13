@@ -18,7 +18,7 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AbstractLogicalDAGImageRender {
+public class AbstractPhysicalPlanDAGImageRender {
 
     public static void renderDAGToFile(String outputPath, JGraphXAdapter<Integer, DualEdge> graphAdapter) {
         BufferedImage image =
