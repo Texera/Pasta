@@ -20,8 +20,7 @@ import java.util.Set;
 
 public class KNIMESummaryXMLParser {
 
-
-    private static final Set<String> blockingOpNames = readBlockingOperatorNames("/Users/xzliu/IdeaProjects/DualEdgeDAG/src/WorkflowParser/KNIMEBlockingPorts.conf");
+    private static final Set<String> blockingOpNames = readBlockingOperatorNames("src/WorkflowParser/KNIMEBlockingPorts.conf");
 
 
     private static Set<String> readBlockingOperatorNames(String configPath) {

@@ -44,6 +44,8 @@ public class RunWorkflowExperiment {
 
         Path outputPath;
 
+        // TODO: Please replace the path here to be your desired output path for this experiment.
+
         if (randomWeight) {
             outputPath = Paths.get("/Users/xzliu/Desktop/Experiments").resolve(fileType).resolve(fileName).resolve("seed_" + seed);
         } else {

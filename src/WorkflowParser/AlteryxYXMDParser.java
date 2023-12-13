@@ -20,8 +20,7 @@ import java.util.Set;
 
 public class AlteryxYXMDParser {
 
-
-    private static final Set<String> blockingOpDLLNames = readBlockingOperationEngineDllEntryPoints("/Users/xzliu/IdeaProjects/DualEdgeDAG/src/WorkflowParser/AlteryxBlockingOperations.conf");
+    private static final Set<String> blockingOpDLLNames = readBlockingOperationEngineDllEntryPoints("src/WorkflowParser/AlteryxBlockingOperations.conf");
 
 
     private static Set<String> readBlockingOperationEngineDllEntryPoints(String configPath) {

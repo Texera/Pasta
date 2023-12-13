@@ -44,6 +44,9 @@ public class RunRandomDAGExperiment {
         }
         DualDAGRepeatableGenerator<Integer> graphGenerator = new DualDAGRepeatableGenerator<>(numVertices, numEdges, seed, pBEdge, forceChain, pForceChain);
         graphGenerator.generateDualGraph(randomDAGWithCost);
+
+        // TODO: Please replace the path here to be your desired output path for this experiment.
+
         Path outputPath = Paths.get(String.format("/Users/xzliu/Desktop/Experiments/v%s_e%s_s%s_pB%s_fC_%s_pFC%s", numVertices, numEdges, seed, pBEdge, forceChain, pForceChain));
 
         ExperimentRunner.runOptimalExecutionPlanFinder(randomDAGWithCost, outputPath, true);
