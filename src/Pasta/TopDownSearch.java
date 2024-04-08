@@ -10,7 +10,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 
-public class PastaFinder {
+public class TopDownSearch {
     private final PhysicalPlan inputPhysicalPlan;
     private final BigInteger searchSpaceSize;
     private final LinkedList<ExecutionPlan> searchQueue = new LinkedList<>();
@@ -27,7 +27,7 @@ public class PastaFinder {
     private boolean pruneByUnsalvageableStates = false;
     private boolean isGreedy = false;
 
-    public PastaFinder(PhysicalPlan inputPhysicalPlan, boolean verbose) {
+    public TopDownSearch(PhysicalPlan inputPhysicalPlan, boolean verbose) {
         this.inputPhysicalPlan = inputPhysicalPlan;
         this.seedState = new ExecutionPlan(inputPhysicalPlan, inputPhysicalPlan.getDualDAG().edgeSet());
         int numNBEdges = this.inputPhysicalPlan.getDualDAG().edgeSet().size() - this.inputPhysicalPlan.getBlockingEdges().size();
@@ -46,7 +46,7 @@ public class PastaFinder {
         if (allNonBlockingPipelinedState.checkSchedulability()) {
             this.goalState = allNonBlockingPipelinedState;
             if (this.verbose)
-                System.out.println(this.inputPhysicalPlan + " is natively schedulable. Search skipped.");
+                System.out.println(this.inputPhysicalPlan + " is natively schedulable. TopDownSearch skipped.");
         } else {
             executeSearch();
         }
@@ -81,7 +81,7 @@ public class PastaFinder {
             }
             Set<DualEdge> modifiedSeedStateMatEdges = new HashSet<>(this.seedState.getMaterializedPhysicalPlanEdges());
             List<Set<DualEdge>> zeroBlockingChains = new LinkedList<>();
-            this.inputPhysicalPlan.getChains().forEach(chain -> {
+            this.inputPhysicalPlan.getMaximalChains().forEach(chain -> {
                 List<DualEdge> chainEdgeList = chain.getEdgeList();
                 if (chainEdgeList.stream().anyMatch(this.inputPhysicalPlan::isBlockingEdge)) {
                     // A chain with at least one blocking edge does not need materialization on any non-blocking edges.
@@ -138,7 +138,7 @@ public class PastaFinder {
         }
 
         while (!searchQueue.isEmpty()) {
-            if (visitedSet.size() > 1E7) {
+            if (visitedSet.size() > 1E5) {
                 {
                     if (this.verbose) {
                         System.out.println(visitedSet.size() + " states visited, exceeds 100,000, search terminated early.");
@@ -192,7 +192,7 @@ public class PastaFinder {
                 }
             });
             if (isGreedy) {
-                Optional<ExecutionPlan> bestNeighbor = schedulableNeighbors.stream().max(Comparator.comparingDouble(ExecutionPlan::getCost));
+                Optional<ExecutionPlan> bestNeighbor = schedulableNeighbors.stream().min(Comparator.comparingDouble(ExecutionPlan::getCost));
                 if (bestNeighbor.isPresent()) {
 //                    if (this.verbose) {
 //                        System.out.printf("Best neighbor of %s is %s\n", currentState, bestNeighbor);

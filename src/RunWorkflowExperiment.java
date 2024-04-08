@@ -52,6 +52,7 @@ public class RunWorkflowExperiment {
             outputPath = Paths.get("/Users/xzliu/Desktop/Experiments").resolve(fileType).resolve(fileName).resolve("realCost");
         }
 
-        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath, true);
+        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("topDown"), true, true);
+        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("bottomUp"), true, false);
     }
 }

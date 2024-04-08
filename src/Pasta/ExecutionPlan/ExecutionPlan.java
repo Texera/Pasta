@@ -17,16 +17,24 @@ import java.util.Set;
 public class ExecutionPlan {
     private final PhysicalPlan physicalPlan;
     private final Set<DualEdge> materializedPhysicalPlanEdges;
+
+    private final Set<DualEdge> pipelinedPhysicalPlanEdges;
+
     private final double cost;
+
+    private final boolean schedulability;
 
     public ExecutionPlan(PhysicalPlan physicalPlan, Set<DualEdge> materializedPhysicalPlanEdges) {
         this.physicalPlan = physicalPlan;
         this.materializedPhysicalPlanEdges = new HashSet<>(materializedPhysicalPlanEdges);
         assert materializedPhysicalPlanEdges.containsAll(this.physicalPlan.getBlockingEdges());
-        Set<DualEdge> pipelinedPhysicalPlanEdges = new HashSet<>(this.physicalPlan.getDualDAG().edgeSet());
-        pipelinedPhysicalPlanEdges.removeAll(this.materializedPhysicalPlanEdges);
-        this.cost = this.materializedPhysicalPlanEdges.stream().map(DualEdge::getWeight).reduce(0.0, Double::sum)
-                - this.physicalPlan.getBlockingEdges().stream().map(DualEdge::getWeight).reduce(0.0, Double::sum);
+        this.pipelinedPhysicalPlanEdges = (new HashSet<>(this.physicalPlan.getDualDAG().edgeSet()));
+        this.pipelinedPhysicalPlanEdges.removeAll(this.materializedPhysicalPlanEdges);
+        this.schedulability = SchedulabilityChecker.checkPhysicalDAGSchedulability(getDualDAG(), false);
+        this.cost = this.schedulability ?
+                (this.materializedPhysicalPlanEdges.stream().map(DualEdge::getWeight).reduce(0.0, Double::sum)
+                - this.physicalPlan.getBlockingEdges().stream().map(DualEdge::getWeight).reduce(0.0, Double::sum))
+        : Double.MAX_VALUE;
 //        this.cost = this.materializedPhysicalPlanEdges.stream().map(e -> this.physicalPlan.getMaterializationC2Costs().get(new Pair<>(e.getSource(), e.getTarget()))).reduce(0.0, Double::sum) + pipelinedPhysicalPlanEdges.stream().map(e -> this.physicalPlan.getPipeliningC2Costs().get(new Pair<>(e.getSource(), e.getTarget()))).reduce(0.0, Double::sum);
 
     }
@@ -37,6 +45,10 @@ public class ExecutionPlan {
 
     public Set<DualEdge> getMaterializedPhysicalPlanEdges() {
         return materializedPhysicalPlanEdges;
+    }
+
+    public Set<DualEdge> getPipelinedPhysicalPlanEdges() {
+        return pipelinedPhysicalPlanEdges;
     }
 
     public DirectedAcyclicGraph<Integer, DualEdge> getDualDAG() {
@@ -53,7 +65,7 @@ public class ExecutionPlan {
     }
 
     public boolean checkSchedulability() {
-        return SchedulabilityChecker.checkPhysicalDAGSchedulability(getDualDAG(), false);
+        return this.schedulability;
     }
 
     public boolean showSchedulability() {

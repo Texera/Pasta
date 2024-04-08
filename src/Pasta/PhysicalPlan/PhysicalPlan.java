@@ -19,7 +19,9 @@ public class PhysicalPlan {
     private final Set<DualEdge> blockingEdges;
 
     private final Set<DualEdge> nonBlockingEdges;
-    private final Set<GraphPath<Integer, DualEdge>> chains;
+    private final Set<GraphPath<Integer, DualEdge>> maximalChains;
+
+    private final Set<Set<DualEdge>> maximalChainSets;
     private final AsUndirectedGraph<Integer, DualEdge> undirectedDualDAG;
 
     private final Set<List<DualEdge>> undirectedCycleBases;
@@ -39,7 +41,8 @@ public class PhysicalPlan {
         this.dualDAG = dualDAG;
         this.blockingEdges = this.dualDAG.edgeSet().stream().filter(DualEdge::isBlkOrMat).collect(Collectors.toSet());
         this.nonBlockingEdges = this.dualDAG.edgeSet().stream().filter(e -> !e.isBlkOrMat()).collect(Collectors.toSet());
-        this.chains = PastaUtils.getChainPaths(this.dualDAG);
+        this.maximalChains = PastaUtils.getChainPaths(this.dualDAG);
+        this.maximalChainSets = this.maximalChains.stream().map(chain-> new HashSet<>(chain.getEdgeList())).collect(Collectors.toSet());
         this.undirectedDualDAG = new AsUndirectedGraph<>(dualDAG);
         this.undirectedCycleBases = findUndirectedCycleBases();
 //        System.out.println("Undirected cycle bases are:" + undirectedCycleBases);
@@ -95,8 +98,12 @@ public class PhysicalPlan {
         });
     }
 
-    public Set<GraphPath<Integer, DualEdge>> getChains() {
-        return chains;
+    public Set<GraphPath<Integer, DualEdge>> getMaximalChains() {
+        return maximalChains;
+    }
+
+    public Set<Set<DualEdge>> getMaximalChainSets() {
+        return this.maximalChainSets;
     }
 
     public Set<DualEdge> getBlockingEdges() {

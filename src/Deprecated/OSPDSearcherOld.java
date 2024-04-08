@@ -92,7 +92,7 @@ public class OSPDSearcherOld {
                 }
             }
         }
-        System.out.println("Search-based algorithm explored " + visited.size() + " states, prune ratio: " + spaceSize.subtract(BigDecimal.valueOf(visited.size())).divide(spaceSize).multiply(BigDecimal.valueOf(100)) + "%.");
+        System.out.println("TopDownSearch-based algorithm explored " + visited.size() + " states, prune ratio: " + spaceSize.subtract(BigDecimal.valueOf(visited.size())).divide(spaceSize).multiply(BigDecimal.valueOf(100)) + "%.");
         return optimum;
     }
 }
