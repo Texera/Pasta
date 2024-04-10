@@ -112,9 +112,7 @@ public class BottomUpSearch {
                         Set<Set<DualEdge>> bestEdgeRemovedChains = allPipelinedChains.stream().map(chain -> {
                             Set<DualEdge> bestEdgeRemovedChain = new HashSet<>(chain);
                             Optional<DualEdge> bestEdge = bestEdgeRemovedChain.stream().min(Comparator.comparingDouble(DualEdge::getWeight));
-                            bestEdge.ifPresent(edge -> {
-                                bestEdgeRemovedChain.remove(bestEdge);
-                            });
+                            bestEdge.ifPresent(bestEdgeRemovedChain::remove);
                             return bestEdgeRemovedChain;
                         }).collect(Collectors.toSet());
 

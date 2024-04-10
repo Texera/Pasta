@@ -1,6 +1,7 @@
 import DualEdgeDAG.DualEdge;
 import ExperimentRunner.ExperimentRunner;
 import WorkflowParser.AlteryxYXMDParser;
+import WorkflowParser.DotFileParser;
 import WorkflowParser.KNIMESummaryXMLParser;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
@@ -29,8 +30,12 @@ public class RunWorkflowExperiment {
         String fileType = inputWorkflowPath.substring(inputWorkflowPath.lastIndexOf(".") + 1);
         if (fileType.equals("yxmd")) {
             workflowDAG = AlteryxYXMDParser.parseYXMD(inputWorkflowPath);
-        } else {
+        } else if (fileType.equals("xml")) {
             workflowDAG = KNIMESummaryXMLParser.parseKNIMEXML(inputWorkflowPath);
+        } else if (fileType.equals("dot")) {
+            workflowDAG = DotFileParser.parseDotFile(inputWorkflowPath);
+        } else {
+            throw new UnsupportedOperationException("Unsupported File Type!");
         }
 
         String fileName = Paths.get(inputWorkflowPath).getFileName().toString();
