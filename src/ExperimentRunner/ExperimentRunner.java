@@ -13,7 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class ExperimentRunner {
-    public static void runOptimalExecutionPlanFinder(DirectedAcyclicGraph<Integer, DualEdge> inputPhysicalPlan, Path outputPath, boolean verbose, boolean topDown) {
+    public static void runOptimalExecutionPlanFinder(DirectedAcyclicGraph<Integer, DualEdge> inputPhysicalPlan, Path outputPath, boolean verbose, boolean topDown, boolean onlyCheckShedulability) {
         if (!Files.exists(outputPath)) {
             try {
                 Files.createDirectories(outputPath);
@@ -29,6 +29,11 @@ public class ExperimentRunner {
         System.out.println("Initializing the physical plan took: " + elapsedTime + " ms");
         physicalPlan.renderDAGImageToPath(outputPath.resolve("input_physical_plan.png").toString());
         physicalPlan.renderAbstractDAGToPath(outputPath.resolve("abstract_input_physical_plan.png").toString());
+
+        if (onlyCheckShedulability) {
+            System.out.println(new ExecutionPlan(physicalPlan, physicalPlan.getBlockingEdges()).checkSchedulability());
+            return;
+        }
 
         if (topDown) {
             System.out.println(System.lineSeparator());

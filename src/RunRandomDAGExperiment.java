@@ -49,7 +49,7 @@ public class RunRandomDAGExperiment {
 
         Path outputPath = Paths.get(String.format("/Users/xzliu/Desktop/Experiments/v%s_e%s_s%s_pB%s_fC_%s_pFC%s", numVertices, numEdges, seed, pBEdge, forceChain, pForceChain));
 
-        ExperimentRunner.runOptimalExecutionPlanFinder(randomDAGWithCost, outputPath, true, false);
+        ExperimentRunner.runOptimalExecutionPlanFinder(randomDAGWithCost, outputPath, true, false, false);
     }
 
 }
