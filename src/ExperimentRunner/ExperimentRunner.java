@@ -146,6 +146,18 @@ public class ExperimentRunner {
 
             System.out.println(System.lineSeparator());
             startTime = System.currentTimeMillis();
+            BottomUpSearch bottomUpSearchRule123 = new BottomUpSearch(physicalPlan, verbose);
+            bottomUpSearchRule123.setPruneBySafeEdges(true);
+            bottomUpSearchRule123.setPruneByChains(true);
+            bottomUpSearchRule123.setPruneByEarlyStopping(true);
+            ExecutionPlan oep123 = bottomUpSearchRule123.execute();
+            endTime = System.currentTimeMillis();
+            elapsedTime = endTime - startTime;
+            System.out.println("Using rule 1, 2 and 3 took: " + elapsedTime + " ms");
+            oep123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2_3.png").toString());
+
+            System.out.println(System.lineSeparator());
+            startTime = System.currentTimeMillis();
             BottomUpSearch bottomUpSearchRule23 = new BottomUpSearch(physicalPlan, verbose);
             bottomUpSearchRule23.setPruneBySafeEdges(true);
             bottomUpSearchRule23.setPruneByChains(true);
