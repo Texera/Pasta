@@ -140,7 +140,7 @@ public class BottomUpSearch {
             if (this.pruneByEarlyStopping) {
                 unvisitedNeighborStates = unvisitedNeighborStates.stream()
                         .filter(neighborState ->
-                                schedulableStates.stream().noneMatch(
+                                this.schedulableStates.stream().noneMatch(
                                         ancestorState ->
                                                 ancestorState.getPipelinedPhysicalPlanEdges()
                                                         .containsAll(neighborState.getPipelinedPhysicalPlanEdges())

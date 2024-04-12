@@ -9,6 +9,7 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TopDownSearch {
     private final PhysicalPlan inputPhysicalPlan;
@@ -24,7 +25,7 @@ public class TopDownSearch {
     private ExecutionPlan goalState;
     private boolean pruneByChains = false;
     private boolean pruneBySafeEdges = false;
-    private boolean pruneByUnsalvageableStates = false;
+    private boolean pruneByEarlyStopping = false;
     private boolean isGreedy = false;
 
     public TopDownSearch(PhysicalPlan inputPhysicalPlan, boolean verbose) {
@@ -61,9 +62,9 @@ public class TopDownSearch {
                     (new DecimalFormat("0.###E0", DecimalFormatSymbols.getInstance(Locale.ROOT)))
                             .format(this.searchSpaceSize)
             );
-            if (this.pruneByUnsalvageableStates) System.out.println("Using optimization 2: stop at hopeless states.");
-            if (this.pruneByChains) System.out.println("Using optimization 3: prune by chains.");
-            if (this.pruneBySafeEdges) System.out.println("Using optimization 4: prune by safe edges.");
+            if (this.pruneByEarlyStopping) System.out.println("Using optimization: prune by early stopping.");
+            if (this.pruneByChains) System.out.println("Using optimization: prune by chains.");
+            if (this.pruneBySafeEdges) System.out.println("Using optimization: prune by safe edges.");
         }
 
         if (this.pruneBySafeEdges) {
@@ -152,7 +153,7 @@ public class TopDownSearch {
                 if (currentState.getCost() < this.goalState.getCost()) {
                     this.goalState = currentState;
                 }
-            } else if (this.pruneByUnsalvageableStates) {
+            } else if (this.pruneByEarlyStopping) {
                 if (this.inputPhysicalPlan.getMustMaterializeAtLeastOneEdgeSets().stream().anyMatch(edgeSet -> edgeSet.stream().noneMatch(e -> currentState.getMaterializedPhysicalPlanEdges().contains(e)))) {
                     // All its neighbors are hopeless
                     this.hopelessStates.add(currentState);
@@ -168,40 +169,46 @@ public class TopDownSearch {
                 }
             }
 
-            List<ExecutionPlan> schedulableNeighbors = new LinkedList<>();
-            currentState.getMaterializedPhysicalPlanEdges().forEach(lEdge -> {
-                if (!this.inputPhysicalPlan.isBlockingEdge(lEdge)) {
-                    Set<DualEdge> neighborStateMaterializedEdges = new HashSet<>(currentState.getMaterializedPhysicalPlanEdges());
-                    neighborStateMaterializedEdges.remove(lEdge);
-                    ExecutionPlan neighborState = new ExecutionPlan(currentState.getPhysicalPlan(), neighborStateMaterializedEdges);
-                    if (!visitedSet.contains(neighborState)) {
-                        if (this.isGreedy) {
-                            if (neighborState.checkSchedulability()) {
-                                schedulableNeighbors.add(neighborState);
-                            }
-                        } else {
-                            if (!this.hopelessStates.contains(neighborState)) {
-                                searchQueue.add(neighborState);
-                                visitedSet.add(neighborState);
-                                if (visitedSet.size() % 10000 == 0 && this.verbose) {
-                                    System.out.println(visitedSet.size() + " states visited.");
-                                }
-                            }
-                        }
-                    }
-                }
-            });
+            Set<ExecutionPlan> unvisitedNeighborStates = currentState.getMaterializedPhysicalPlanEdges().stream()
+                    .filter(lEdge -> !this.inputPhysicalPlan.isBlockingEdge(lEdge))
+                    .map(lEdge -> {
+                Set<DualEdge> neighborStateMaterializedEdges =
+                        new HashSet<>(currentState.getMaterializedPhysicalPlanEdges());
+                neighborStateMaterializedEdges.remove(lEdge);
+                return new ExecutionPlan(currentState.getPhysicalPlan(), neighborStateMaterializedEdges);
+            })
+                    .filter(neighborState -> !visitedSet.contains(neighborState)).collect(Collectors.toSet());
+
+            if (this.pruneByEarlyStopping) {
+                unvisitedNeighborStates = unvisitedNeighborStates.stream()
+                        .filter(neighborState ->
+                                this.hopelessStates.stream().noneMatch(
+                                        ancestorState ->
+                                                ancestorState.getMaterializedPhysicalPlanEdges()
+                                                        .containsAll(neighborState.getMaterializedPhysicalPlanEdges())
+                                )
+                        ).collect(Collectors.toSet());
+            }
+
             if (isGreedy) {
-                Optional<ExecutionPlan> bestNeighbor = schedulableNeighbors.stream().min(Comparator.comparingDouble(ExecutionPlan::getCost));
+                Optional<ExecutionPlan> bestNeighbor = unvisitedNeighborStates.stream().min(Comparator.comparingDouble(ExecutionPlan::getCost));
                 if (bestNeighbor.isPresent()) {
-//                    if (this.verbose) {
-//                        System.out.printf("Best neighbor of %s is %s\n", currentState, bestNeighbor);
-//                    }
+                    if (this.verbose) {
+                        System.out.printf("Best neighbor of %s is %s\n", currentState, bestNeighbor);
+                    }
                     searchQueue.add(bestNeighbor.get());
                     visitedSet.add(bestNeighbor.get());
                 }
+            } else {
+                unvisitedNeighborStates.forEach(neighborState -> {
+                    searchQueue.add(neighborState);
+                    visitedSet.add(neighborState);
+                    if (visitedSet.size() % 10000 == 0 && this.verbose) {
+                        System.out.println(visitedSet.size() + " states visited.");
+                    }
+                });
             }
-        }
+
         if (this.verbose) {
             System.out.println("Number of states visited: " + visitedSet.size());
             System.out.println("Goal State: " + this.goalState);
@@ -217,8 +224,8 @@ public class TopDownSearch {
         this.pruneBySafeEdges = pruneBySafeEdges;
     }
 
-    public void setPruneByUnsalvageableStates(boolean pruneByUnsalvageableStates) {
-        this.pruneByUnsalvageableStates = pruneByUnsalvageableStates;
+    public void setPruneByEarlyStopping(boolean pruneByEarlyStopping) {
+        this.pruneByEarlyStopping = pruneByEarlyStopping;
     }
 
     public void setGreedy(boolean greedy) {

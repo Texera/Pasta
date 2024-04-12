@@ -5,7 +5,6 @@ import Pasta.BottomUpSearch;
 import Pasta.ExecutionPlan.ExecutionPlan;
 import Pasta.TopDownSearch;
 import Pasta.PhysicalPlan.PhysicalPlan;
-import org.checkerframework.common.subtyping.qual.Bottom;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import java.io.IOException;
@@ -41,7 +40,7 @@ public class ExperimentRunner {
             TopDownSearch greedySearcher = new TopDownSearch(physicalPlan, verbose);
             greedySearcher.setPruneByChains(true);
             greedySearcher.setPruneBySafeEdges(true);
-            greedySearcher.setPruneByUnsalvageableStates(true);
+            greedySearcher.setPruneByEarlyStopping(true);
             greedySearcher.setGreedy(true);
             ExecutionPlan greedyOptimum = greedySearcher.execute();
             endTime = System.currentTimeMillis();
@@ -54,7 +53,7 @@ public class ExperimentRunner {
             TopDownSearch topDownSearchRule123 = new TopDownSearch(physicalPlan, verbose);
             topDownSearchRule123.setPruneByChains(true);
             topDownSearchRule123.setPruneBySafeEdges(true);
-            topDownSearchRule123.setPruneByUnsalvageableStates(true);
+            topDownSearchRule123.setPruneByEarlyStopping(true);
             ExecutionPlan oep123 = topDownSearchRule123.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
@@ -75,7 +74,7 @@ public class ExperimentRunner {
             System.out.println(System.lineSeparator());
             startTime = System.currentTimeMillis();
             TopDownSearch topDownSearchRule13 = new TopDownSearch(physicalPlan, verbose);
-            topDownSearchRule13.setPruneByUnsalvageableStates(true);
+            topDownSearchRule13.setPruneByEarlyStopping(true);
             topDownSearchRule13.setPruneBySafeEdges(true);
             ExecutionPlan oep13 = topDownSearchRule13.execute();
             endTime = System.currentTimeMillis();
@@ -85,7 +84,7 @@ public class ExperimentRunner {
 
             startTime = System.currentTimeMillis();
             TopDownSearch topDownSearchRule12 = new TopDownSearch(physicalPlan, verbose);
-            topDownSearchRule12.setPruneByUnsalvageableStates(true);
+            topDownSearchRule12.setPruneByEarlyStopping(true);
             topDownSearchRule12.setPruneByChains(true);
             ExecutionPlan oep12 = topDownSearchRule12.execute();
             endTime = System.currentTimeMillis();
@@ -116,7 +115,7 @@ public class ExperimentRunner {
             System.out.println(System.lineSeparator());
             startTime = System.currentTimeMillis();
             TopDownSearch topDownSearchRule1 = new TopDownSearch(physicalPlan, verbose);
-            topDownSearchRule1.setPruneByUnsalvageableStates(true);
+            topDownSearchRule1.setPruneByEarlyStopping(true);
             ExecutionPlan oep1 = topDownSearchRule1.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
