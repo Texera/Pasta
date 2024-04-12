@@ -208,7 +208,7 @@ public class TopDownSearch {
                     }
                 });
             }
-
+        }
         if (this.verbose) {
             System.out.println("Number of states visited: " + visitedSet.size());
             System.out.println("Goal State: " + this.goalState);
