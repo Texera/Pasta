@@ -141,9 +141,7 @@ public class TopDownSearch {
         while (!searchQueue.isEmpty()) {
             if (visitedSet.size() > 1E5) {
                 {
-                    if (this.verbose) {
-                        System.out.println(visitedSet.size() + " states visited, exceeds 100,000, search terminated early.");
-                    }
+                    System.out.println(visitedSet.size() + " states visited, exceeds 100,000, search terminated early.");
                 }
                 break;
             }
@@ -209,9 +207,9 @@ public class TopDownSearch {
                 });
             }
         }
+        System.out.println("Number of states visited: " + visitedSet.size());
+        System.out.println("Goal State: " + this.goalState);
         if (this.verbose) {
-            System.out.println("Number of states visited: " + visitedSet.size());
-            System.out.println("Goal State: " + this.goalState);
             this.goalState.showSchedulability();
         }
     }

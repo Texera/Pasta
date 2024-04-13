@@ -36,6 +36,8 @@ public class ExperimentRunner {
 
         if (topDown) {
             System.out.println(System.lineSeparator());
+            System.out.println("Starting Top-down Search");
+            System.out.println(System.lineSeparator());
             startTime = System.currentTimeMillis();
             TopDownSearch greedySearcher = new TopDownSearch(physicalPlan, verbose);
             greedySearcher.setPruneByChains(true);
@@ -57,7 +59,7 @@ public class ExperimentRunner {
             ExecutionPlan oep123 = topDownSearchRule123.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using all three rules took: " + elapsedTime + " ms");
+            System.out.println("Using (EarlyStop + Chain + SafeEdge) took: " + elapsedTime + " ms");
             oep123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2_3.png").toString());
 
             System.out.println(System.lineSeparator());
@@ -68,7 +70,7 @@ public class ExperimentRunner {
             ExecutionPlan oep23 = topDownSearchRule23.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using rule 2 and 3 took: " + elapsedTime + " ms");
+            System.out.println("Using (Chain + SafeEdge) took: " + elapsedTime + " ms");
             oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2_3.png").toString());
 
             System.out.println(System.lineSeparator());
@@ -79,9 +81,10 @@ public class ExperimentRunner {
             ExecutionPlan oep13 = topDownSearchRule13.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using rule 1 and 3 took: " + elapsedTime + " ms");
+            System.out.println("Using (EarlyStop + SafeEdge) took: " + elapsedTime + " ms");
             oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_3.png").toString());
 
+            System.out.println(System.lineSeparator());
             startTime = System.currentTimeMillis();
             TopDownSearch topDownSearchRule12 = new TopDownSearch(physicalPlan, verbose);
             topDownSearchRule12.setPruneByEarlyStopping(true);
@@ -89,7 +92,7 @@ public class ExperimentRunner {
             ExecutionPlan oep12 = topDownSearchRule12.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using rule 1 and 2 took: " + elapsedTime + " ms");
+            System.out.println("Using (EarlyStop + Chain) took: " + elapsedTime + " ms");
             oep12.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2.png").toString());
 
             System.out.println(System.lineSeparator());
@@ -99,7 +102,7 @@ public class ExperimentRunner {
             ExecutionPlan oep2 = topDownSearchRule2.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using rule 2 took: " + elapsedTime + " ms");
+            System.out.println("Using (Chain) took: " + elapsedTime + " ms");
             oep2.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2.png").toString());
 
             System.out.println(System.lineSeparator());
@@ -109,7 +112,7 @@ public class ExperimentRunner {
             ExecutionPlan oep3 = topDownSearchRule3.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using rule 3 took: " + elapsedTime + " ms");
+            System.out.println("Using (SafeEdge) took: " + elapsedTime + " ms");
             oep3.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_3.png").toString());
 
             System.out.println(System.lineSeparator());
@@ -119,7 +122,7 @@ public class ExperimentRunner {
             ExecutionPlan oep1 = topDownSearchRule1.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using rule 1 took: " + elapsedTime + " ms");
+            System.out.println("Using (EarlyStop) took: " + elapsedTime + " ms");
             oep1.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1.png").toString());
 
             System.out.println(System.lineSeparator());
@@ -131,6 +134,8 @@ public class ExperimentRunner {
             System.out.println("Baseline search took: " + elapsedTime + " ms");
             oepOfBaseline.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_baseline.png").toString());
         } else {
+            System.out.println(System.lineSeparator());
+            System.out.println("Starting Bottom-up Search");
             System.out.println(System.lineSeparator());
             startTime = System.currentTimeMillis();
             BottomUpSearch greedySearcher = new BottomUpSearch(physicalPlan, verbose);
@@ -152,7 +157,7 @@ public class ExperimentRunner {
             ExecutionPlan oep123 = bottomUpSearchRule123.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using rule 1, 2 and 3 took: " + elapsedTime + " ms");
+            System.out.println("Using (EarlyStop + Chain + SafeEdge) took: " + elapsedTime + " ms");
             oep123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2_3.png").toString());
 
             System.out.println(System.lineSeparator());
@@ -163,8 +168,30 @@ public class ExperimentRunner {
             ExecutionPlan oep23 = bottomUpSearchRule23.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using rule 2 and 3 took: " + elapsedTime + " ms");
+            System.out.println("Using (Chain + SafeEdge) took: " + elapsedTime + " ms");
             oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2_3.png").toString());
+
+            System.out.println(System.lineSeparator());
+            startTime = System.currentTimeMillis();
+            BottomUpSearch bottomUpSearchRule13 = new BottomUpSearch(physicalPlan, verbose);
+            bottomUpSearchRule13.setPruneBySafeEdges(true);
+            bottomUpSearchRule13.setPruneByEarlyStopping(true);
+            ExecutionPlan oep13 = bottomUpSearchRule13.execute();
+            endTime = System.currentTimeMillis();
+            elapsedTime = endTime - startTime;
+            System.out.println("Using (EarlyStop + SafeEdge) took: " + elapsedTime + " ms");
+            oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_3.png").toString());
+
+            System.out.println(System.lineSeparator());
+            startTime = System.currentTimeMillis();
+            BottomUpSearch bottomUpSearchRule12 = new BottomUpSearch(physicalPlan, verbose);
+            bottomUpSearchRule12.setPruneByChains(true);
+            bottomUpSearchRule12.setPruneByEarlyStopping(true);
+            ExecutionPlan oep12 = bottomUpSearchRule12.execute();
+            endTime = System.currentTimeMillis();
+            elapsedTime = endTime - startTime;
+            System.out.println("Using (EarlyStop + Chain) took: " + elapsedTime + " ms");
+            oep123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2.png").toString());
 
             System.out.println(System.lineSeparator());
             startTime = System.currentTimeMillis();
@@ -173,7 +200,7 @@ public class ExperimentRunner {
             ExecutionPlan oep2 = bottomUpSearchRule2.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using rule 2 took: " + elapsedTime + " ms");
+            System.out.println("Using (Chain) took: " + elapsedTime + " ms");
             oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2.png").toString());
 
             System.out.println(System.lineSeparator());
@@ -183,8 +210,19 @@ public class ExperimentRunner {
             ExecutionPlan oep3 = bottomUpSearchRule3.execute();
             endTime = System.currentTimeMillis();
             elapsedTime = endTime - startTime;
-            System.out.println("Using rule 3 took: " + elapsedTime + " ms");
+            System.out.println("Using (SafeEdge) took: " + elapsedTime + " ms");
             oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_3.png").toString());
+
+            System.out.println(System.lineSeparator());
+            startTime = System.currentTimeMillis();
+            BottomUpSearch bottomUpSearchRule1 = new BottomUpSearch(physicalPlan, verbose);
+            bottomUpSearchRule1.setPruneByChains(true);
+            bottomUpSearchRule1.setPruneByEarlyStopping(true);
+            ExecutionPlan oep1 = bottomUpSearchRule1.execute();
+            endTime = System.currentTimeMillis();
+            elapsedTime = endTime - startTime;
+            System.out.println("Using (EarlyStop) took: " + elapsedTime + " ms");
+            oep123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1.png").toString());
 
             System.out.println(System.lineSeparator());
             startTime = System.currentTimeMillis();

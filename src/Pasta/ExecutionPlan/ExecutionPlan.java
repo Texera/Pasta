@@ -92,9 +92,10 @@ public class ExecutionPlan {
     @Override
     public String toString() {
         return "Pasta.ExecutionPlan{" +
-                "PhysicalPlan=" + physicalPlan +
-                ", materializedEdges=" + materializedPhysicalPlanEdges +
-                ", cost=" + cost +
+//                "PhysicalPlan=" + physicalPlan +
+//                ", materializedEdges=" + materializedPhysicalPlanEdges +
+//                ", cost=" + cost +
+                "cost=" + cost +
                 '}';
     }
 
