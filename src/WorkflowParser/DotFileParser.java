@@ -63,7 +63,7 @@ public class DotFileParser {
         Graph<DotFileVertex, DefaultEdge> graph = new DirectedAcyclicGraph<>(DefaultEdge.class);
 
         DOTImporter<DotFileVertex, DefaultEdge> importer = new DOTImporter<>();
-        importer.setVertexWithAttributesFactory((label, attributes) -> new DotFileVertex(Integer.parseInt(label), attributes.get("label").toString()));
+        importer.setVertexWithAttributesFactory((label, attributes) -> new DotFileVertex(label.hashCode(), attributes.get("label").toString()));
         // Import the DOT file
         try {
             importer.importGraph(graph, new FileReader(filePath));

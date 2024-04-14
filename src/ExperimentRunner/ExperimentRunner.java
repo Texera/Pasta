@@ -12,7 +12,29 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class ExperimentRunner {
-    public static void runOptimalExecutionPlanFinder(DirectedAcyclicGraph<Integer, DualEdge> inputPhysicalPlan, Path outputPath, boolean verbose, boolean topDown, boolean onlyCheckShedulability) {
+
+    public static boolean runSchedulabilityChecker(DirectedAcyclicGraph<Integer, DualEdge> inputPhysicalPlan, Path outputPath) {
+        if (!Files.exists(outputPath)) {
+            try {
+                Files.createDirectories(outputPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        long startTime = System.currentTimeMillis();
+        PhysicalPlan physicalPlan = new PhysicalPlan(inputPhysicalPlan);
+        long endTime = System.currentTimeMillis();
+        long elapsedTime = endTime - startTime;
+        System.out.print("Initializing the physical plan took: " + elapsedTime + " ms. ");
+        physicalPlan.renderDAGImageToPath(outputPath.resolve("input_physical_plan.png").toString());
+        physicalPlan.renderAbstractDAGToPath(outputPath.resolve("abstract_input_physical_plan.png").toString());
+        boolean schedulability = new ExecutionPlan(physicalPlan, physicalPlan.getBlockingEdges()).checkSchedulability();
+        System.out.println("Schedulability:" + schedulability);
+        return schedulability;
+    }
+
+    public static void runOptimalExecutionPlanFinder(DirectedAcyclicGraph<Integer, DualEdge> inputPhysicalPlan, Path outputPath, boolean verbose, boolean topDown) {
         if (!Files.exists(outputPath)) {
             try {
                 Files.createDirectories(outputPath);
@@ -28,11 +50,6 @@ public class ExperimentRunner {
         System.out.println("Initializing the physical plan took: " + elapsedTime + " ms");
         physicalPlan.renderDAGImageToPath(outputPath.resolve("input_physical_plan.png").toString());
         physicalPlan.renderAbstractDAGToPath(outputPath.resolve("abstract_input_physical_plan.png").toString());
-
-        if (onlyCheckShedulability) {
-            System.out.println(new ExecutionPlan(physicalPlan, physicalPlan.getBlockingEdges()).checkSchedulability());
-            return;
-        }
 
         if (topDown) {
             System.out.println(System.lineSeparator());
