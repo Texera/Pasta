@@ -71,6 +71,10 @@ public class BatchRunWorkflowExperiments {
 
         DirectedAcyclicGraph<Integer, DualEdge> workflowDAG = DotFileParser.parseDotFile(dotFilePath.toString());
         String fileName = dotFilePath.getFileName().toString();
+        if (workflowDAG.vertexSet().size() < 10 || workflowDAG.edgeSet().size() < 10) {
+            System.out.println("Skipped due to small DAG size.");
+            return;
+        }
 
         List<Map<String, String>> topDownResults = ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, baseOutputPath.resolve(fileName).resolve("topDown"), false, true);
         topDownResults.forEach(individualResult->{
