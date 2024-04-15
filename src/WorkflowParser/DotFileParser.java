@@ -2,15 +2,17 @@ package WorkflowParser;
 
 import DualEdgeDAG.DualEdge;
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.nio.dot.DOTImporter;
 import org.jgrapht.util.SupplierUtil;
+import org.jgrapht.nio.Attribute;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class DotFileParser {
@@ -39,6 +41,23 @@ public class DotFileParser {
         }
     }
 
+    public static class DotFileEdge {
+        private int from;
+        private int to;
+        private Map<String, Attribute> attributes;
+
+        public DotFileEdge(int from, int to, Map<String, Attribute> attributes) {
+            this.from = from;
+            this.to = to;
+            this.attributes = attributes;
+        }
+
+        @Override
+        public String toString() {
+            return "Edge from " + from + " to " + to + " with attributes: " + attributes;
+        }
+    }
+
 
     private static final Set<String> blockingOpNames = readBlockingOperatorNames("src/WorkflowParser/KNIMEBlockingPorts.conf");
 
@@ -60,10 +79,17 @@ public class DotFileParser {
 
     public static DirectedAcyclicGraph<Integer, DualEdge> parseDotFile(String filePath) {
 
-        Graph<DotFileVertex, DefaultEdge> graph = new DirectedAcyclicGraph<>(DefaultEdge.class);
+        Graph<DotFileVertex, DualEdge> graph = new DirectedAcyclicGraph<>(DualEdge.class);
 
-        DOTImporter<DotFileVertex, DefaultEdge> importer = new DOTImporter<>();
+        Map<DualEdge, Double> weights = new HashMap<>();
+
+        DOTImporter<DotFileVertex, DualEdge> importer = new DOTImporter<>();
         importer.setVertexWithAttributesFactory((label, attributes) -> new DotFileVertex(label.hashCode(), attributes.get("label").toString()));
+        importer.addEdgeAttributeConsumer((dotFileEdge, attribute)-> {
+            boolean isBlocking = attribute.toString().contains("object");
+            dotFileEdge.getFirst().setBlkOrMat(isBlocking);
+            weights.put(dotFileEdge.getFirst(), Double.parseDouble(attribute.toString().split(":")[1]));
+        });
         // Import the DOT file
         try {
             importer.importGraph(graph, new FileReader(filePath));
@@ -78,12 +104,12 @@ public class DotFileParser {
             dualDAG.addVertex(dotFileVertex.getId());
         });
 
-        graph.edgeSet().forEach(defaultEdge -> {
-            DotFileVertex upstreamVertex = graph.getEdgeSource(defaultEdge);
-            DotFileVertex downstreamVertex = graph.getEdgeTarget(defaultEdge);
-            boolean isEdgeBlocking = blockingOpNames.contains(upstreamVertex.label) || downstreamVertex.label.contains("Joiner") && graph.incomingEdgesOf(downstreamVertex).stream().map(incomingEdge -> graph.getEdgeSource(incomingEdge).getId()).max(Integer::compareTo).get().equals(upstreamVertex.getId());
+        graph.edgeSet().forEach(initialDualEdge -> {
+            DotFileVertex upstreamVertex = graph.getEdgeSource(initialDualEdge);
+            DotFileVertex downstreamVertex = graph.getEdgeTarget(initialDualEdge);
+            boolean isEdgeBlocking = initialDualEdge.isBlkOrMat() || blockingOpNames.contains(upstreamVertex.label) || downstreamVertex.label.contains("Joiner") && graph.incomingEdgesOf(downstreamVertex).stream().map(incomingEdge -> graph.getEdgeSource(incomingEdge).getId()).max(Integer::compareTo).get().equals(upstreamVertex.getId());
             dualDAG.addEdge(upstreamVertex.getId(), downstreamVertex.getId(), new DualEdge(isEdgeBlocking));
-            dualDAG.setEdgeWeight(upstreamVertex.getId(), downstreamVertex.getId(), 1.0);
+            dualDAG.setEdgeWeight(upstreamVertex.getId(), downstreamVertex.getId(), weights.get(initialDualEdge));
         });
 
         return dualDAG;
