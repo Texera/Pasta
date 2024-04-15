@@ -8,6 +8,8 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class RunWorkflowExperiment {
     public static void main(String[] args) {
@@ -57,7 +59,22 @@ public class RunWorkflowExperiment {
             outputPath = Paths.get("/Users/xzliu/Desktop/Experiments").resolve(fileType).resolve(fileName).resolve("realCost");
         }
 
-        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("topDown"), false, true);
-        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("bottomUp"), false, false);
+        ExecutorService executor = Executors.newFixedThreadPool(2); // Create a thread pool with two threads
+
+        // Submit the first task to the executor
+        executor.submit(() -> {
+            ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("topDown"), false, true);
+        });
+
+        // Submit the second task to the executor
+        executor.submit(() -> {
+            ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("bottomUp"), false, false);
+        });
+
+        // Shutdown the executor service
+        executor.shutdown();
+//
+//        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("topDown"), false, true);
+//        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("bottomUp"), false, false);
     }
 }
