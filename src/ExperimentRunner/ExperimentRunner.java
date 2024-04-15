@@ -102,7 +102,7 @@ public class ExperimentRunner {
         experimentResults.put("searchTime", elapsedTime.toString());
         experimentResults.put("numStatesExplored", String.valueOf(searcher.getVisitedSet().size()));
         experimentResults.put("osepCost", String.valueOf(searchResult.getCost()));
-        searchResult.renderDAGImageToPath(outputPath.resolve(String.format("greedy_%b_chain_%b_safeEdge_%b_earlyStop_%b", greedy, pruneByChains, pruneBySafeEdges, pruneByEarlyStopping)).toString());
+        searchResult.renderDAGImageToPath(outputPath.resolve(String.format("greedy_%b_chain_%b_safeEdge_%b_earlyStop_%b.png", greedy, pruneByChains, pruneBySafeEdges, pruneByEarlyStopping)).toString());
         return experimentResults;
     }
 
@@ -127,7 +127,7 @@ public class ExperimentRunner {
         experimentResults.put("searchTime", elapsedTime.toString());
         experimentResults.put("numStatesExplored", String.valueOf(searcher.getVisitedSet().size()));
         experimentResults.put("osepCost", String.valueOf(searchResult.getCost()));
-        searchResult.renderDAGImageToPath(outputPath.resolve(String.format("greedy_%b_chain_%b_safeEdge_%b_earlyStop_%b", greedy, pruneByChains, pruneBySafeEdges, pruneByEarlyStopping)).toString());
+        searchResult.renderDAGImageToPath(outputPath.resolve(String.format("greedy_%b_chain_%b_safeEdge_%b_earlyStop_%b.png", greedy, pruneByChains, pruneBySafeEdges, pruneByEarlyStopping)).toString());
         return experimentResults;
     }
 }

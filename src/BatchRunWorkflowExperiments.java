@@ -51,6 +51,7 @@ public class BatchRunWorkflowExperiments {
             try (Stream<Path> paths = Files.walk(dirPath)) {
                 paths.filter(Files::isRegularFile)
                         .filter(path -> path.toString().endsWith(".dot"))
+                        .parallel()
                         .forEach(path -> {
                             try {
                                 runExperiments(path, outputPath, csvWriter);
@@ -66,7 +67,7 @@ public class BatchRunWorkflowExperiments {
         }
     }
 
-    private static void runExperiments(Path dotFilePath, Path baseOutputPath, BufferedWriter csvWriter) throws IOException {
+    private static synchronized void runExperiments(Path dotFilePath, Path baseOutputPath, BufferedWriter csvWriter) throws IOException {
         System.out.print("Processing file: " + dotFilePath + ". ");
 
         DirectedAcyclicGraph<Integer, DualEdge> workflowDAG = DotFileParser.parseDotFile(dotFilePath.toString());
@@ -79,17 +80,19 @@ public class BatchRunWorkflowExperiments {
         List<Map<String, String>> topDownResults = ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, baseOutputPath.resolve(fileName).resolve("topDown"), false, true);
         topDownResults.forEach(individualResult->{
             try {
-                csvWriter.write(fileName + ","
-                        + "topDown" + ","
-                        + individualResult.get("greedy") + ","
-                        + individualResult.get("pruneByChains") + ","
-                        + individualResult.get("pruneBySafeEdges") + ","
-                        + individualResult.get("pruneByEarlyStopping") + ","
-                        + individualResult.get("searchFinished") + ","
-                        + individualResult.get("searchTime") + ","
-                        + individualResult.get("numStatesExplored") + ","
-                        + individualResult.get("osepCost") + "\n");
-                csvWriter.flush();
+                synchronized (csvWriter) {
+                    csvWriter.write(fileName + ","
+                            + "topDown" + ","
+                            + individualResult.get("greedy") + ","
+                            + individualResult.get("pruneByChains") + ","
+                            + individualResult.get("pruneBySafeEdges") + ","
+                            + individualResult.get("pruneByEarlyStopping") + ","
+                            + individualResult.get("searchFinished") + ","
+                            + individualResult.get("searchTime") + ","
+                            + individualResult.get("numStatesExplored") + ","
+                            + individualResult.get("osepCost") + "\n");
+                    csvWriter.flush();
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -98,17 +101,19 @@ public class BatchRunWorkflowExperiments {
         List<Map<String, String>> bottomUpResults = ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, baseOutputPath.resolve(fileName).resolve("bottomUp"), false, false);
         bottomUpResults.forEach(individualResult->{
             try {
-                csvWriter.write(fileName + ","
-                        + "bottomUp" + ","
-                        + individualResult.get("greedy") + ","
-                        + individualResult.get("pruneByChains") + ","
-                        + individualResult.get("pruneBySafeEdges") + ","
-                        + individualResult.get("pruneByEarlyStopping") + ","
-                        + individualResult.get("searchFinished") + ","
-                        + individualResult.get("searchTime") + ","
-                        + individualResult.get("numStatesExplored") + ","
-                        + individualResult.get("osepCost") + "\n");
-                csvWriter.flush();
+                synchronized (csvWriter) {
+                    csvWriter.write(fileName + ","
+                            + "bottomUp" + ","
+                            + individualResult.get("greedy") + ","
+                            + individualResult.get("pruneByChains") + ","
+                            + individualResult.get("pruneBySafeEdges") + ","
+                            + individualResult.get("pruneByEarlyStopping") + ","
+                            + individualResult.get("searchFinished") + ","
+                            + individualResult.get("searchTime") + ","
+                            + individualResult.get("numStatesExplored") + ","
+                            + individualResult.get("osepCost") + "\n");
+                    csvWriter.flush();
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

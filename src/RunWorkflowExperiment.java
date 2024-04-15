@@ -59,22 +59,6 @@ public class RunWorkflowExperiment {
             outputPath = Paths.get("/Users/xzliu/Desktop/Experiments").resolve(fileType).resolve(fileName).resolve("realCost");
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(2); // Create a thread pool with two threads
-
-        // Submit the first task to the executor
-        executor.submit(() -> {
-            ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("topDown"), false, true);
-        });
-
-        // Submit the second task to the executor
-        executor.submit(() -> {
-            ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("bottomUp"), false, false);
-        });
-
-        // Shutdown the executor service
-        executor.shutdown();
-
-
         ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("topDown"), false, true);
         ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("bottomUp"), false, false);
     }
