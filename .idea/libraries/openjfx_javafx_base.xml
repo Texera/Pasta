@@ -3,7 +3,7 @@
     <properties maven-id="org.openjfx:javafx-base:19" />
     <CLASSES>
       <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-base/19/javafx-base-19.jar!/" />
-      <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-base/19/javafx-base-19-mac-aarch64.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/openjfx/javafx-base/19/javafx-base-19-linux.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
