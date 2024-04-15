@@ -88,9 +88,9 @@ public class BottomUpSearch {
         }
 
         while (!searchQueue.isEmpty()) {
-            if (visitedSet.size() > 1E5) {
+            if (visitedSet.size() > 50000) {
                 {
-                    System.out.println(visitedSet.size() + " states visited, exceeds 100,000, search terminated early.");
+                    System.out.println(visitedSet.size() + " states visited, exceeds 50,000, search terminated early.");
                 }
                 break;
             }
