@@ -86,9 +86,11 @@ public class DotFileParser {
         DOTImporter<DotFileVertex, DualEdge> importer = new DOTImporter<>();
         importer.setVertexWithAttributesFactory((label, attributes) -> new DotFileVertex(label.hashCode(), attributes.get("label").toString()));
         importer.addEdgeAttributeConsumer((dotFileEdge, attribute)-> {
-            boolean isBlocking = attribute.toString().contains("object");
+            String[] labels = attribute.toString().split(";");
+            Double matSize = Double.parseDouble(labels[0].split(":")[1]);
+            boolean isBlocking = labels[1].split(":")[1].contains("True");
             dotFileEdge.getFirst().setBlkOrMat(isBlocking);
-            weights.put(dotFileEdge.getFirst(), Double.parseDouble(attribute.toString().split(":")[1]));
+            weights.put(dotFileEdge.getFirst(), matSize);
         });
         // Import the DOT file
         try {
@@ -107,8 +109,9 @@ public class DotFileParser {
         graph.edgeSet().forEach(initialDualEdge -> {
             DotFileVertex upstreamVertex = graph.getEdgeSource(initialDualEdge);
             DotFileVertex downstreamVertex = graph.getEdgeTarget(initialDualEdge);
-            boolean isEdgeBlocking = initialDualEdge.isBlkOrMat() || blockingOpNames.contains(upstreamVertex.label) || downstreamVertex.label.contains("Joiner") && graph.incomingEdgesOf(downstreamVertex).stream().map(incomingEdge -> graph.getEdgeSource(incomingEdge).getId()).max(Integer::compareTo).get().equals(upstreamVertex.getId());
-            dualDAG.addEdge(upstreamVertex.getId(), downstreamVertex.getId(), new DualEdge(isEdgeBlocking));
+//            boolean isEdgeBlocking = initialDualEdge.isBlkOrMat() || blockingOpNames.contains(upstreamVertex.label) || downstreamVertex.label.contains("Joiner") && graph.incomingEdgesOf(downstreamVertex).stream().map(incomingEdge -> graph.getEdgeSource(incomingEdge).getId()).max(Integer::compareTo).get().equals(upstreamVertex.getId());
+//
+            dualDAG.addEdge(upstreamVertex.getId(), downstreamVertex.getId(), new DualEdge(initialDualEdge.isBlkOrMat()));
             dualDAG.setEdgeWeight(upstreamVertex.getId(), downstreamVertex.getId(), weights.get(initialDualEdge));
         });
 
