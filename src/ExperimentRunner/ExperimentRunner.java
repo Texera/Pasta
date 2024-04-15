@@ -10,6 +10,10 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ExperimentRunner {
 
@@ -34,7 +38,8 @@ public class ExperimentRunner {
         return schedulability;
     }
 
-    public static void runOptimalExecutionPlanFinder(DirectedAcyclicGraph<Integer, DualEdge> inputPhysicalPlan, Path outputPath, boolean verbose, boolean topDown) {
+    public static List<Map<String, String>> runOptimalExecutionPlanFinder(DirectedAcyclicGraph<Integer, DualEdge> inputPhysicalPlan, Path outputPath, boolean verbose, boolean topDown) {
+        List<Map<String, String>> allExpResults = new ArrayList<>();
         if (!Files.exists(outputPath)) {
             try {
                 Files.createDirectories(outputPath);
@@ -50,205 +55,79 @@ public class ExperimentRunner {
         System.out.println("Initializing the physical plan took: " + elapsedTime + " ms");
         physicalPlan.renderDAGImageToPath(outputPath.resolve("input_physical_plan.png").toString());
         physicalPlan.renderAbstractDAGToPath(outputPath.resolve("abstract_input_physical_plan.png").toString());
-
+        boolean schedulability = new ExecutionPlan(physicalPlan, physicalPlan.getBlockingEdges()).checkSchedulability();
+        // skip schedulable workflows
+        if (schedulability) return allExpResults;
+        System.out.println(System.lineSeparator());
         if (topDown) {
-            System.out.println(System.lineSeparator());
             System.out.println("Starting Top-down Search");
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            TopDownSearch greedySearcher = new TopDownSearch(physicalPlan, verbose);
-            greedySearcher.setPruneByChains(true);
-            greedySearcher.setPruneBySafeEdges(true);
-            greedySearcher.setPruneByEarlyStopping(true);
-            greedySearcher.setGreedy(true);
-            ExecutionPlan greedyOptimum = greedySearcher.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using greedy took: " + elapsedTime + " ms");
-            greedyOptimum.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_greedy.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            TopDownSearch topDownSearchRule123 = new TopDownSearch(physicalPlan, verbose);
-            topDownSearchRule123.setPruneByChains(true);
-            topDownSearchRule123.setPruneBySafeEdges(true);
-            topDownSearchRule123.setPruneByEarlyStopping(true);
-            ExecutionPlan oep123 = topDownSearchRule123.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (EarlyStop + Chain + SafeEdge) took: " + elapsedTime + " ms");
-            oep123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2_3.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            TopDownSearch topDownSearchRule23 = new TopDownSearch(physicalPlan, verbose);
-            topDownSearchRule23.setPruneBySafeEdges(true);
-            topDownSearchRule23.setPruneByChains(true);
-            ExecutionPlan oep23 = topDownSearchRule23.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (Chain + SafeEdge) took: " + elapsedTime + " ms");
-            oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2_3.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            TopDownSearch topDownSearchRule13 = new TopDownSearch(physicalPlan, verbose);
-            topDownSearchRule13.setPruneByEarlyStopping(true);
-            topDownSearchRule13.setPruneBySafeEdges(true);
-            ExecutionPlan oep13 = topDownSearchRule13.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (EarlyStop + SafeEdge) took: " + elapsedTime + " ms");
-            oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_3.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            TopDownSearch topDownSearchRule12 = new TopDownSearch(physicalPlan, verbose);
-            topDownSearchRule12.setPruneByEarlyStopping(true);
-            topDownSearchRule12.setPruneByChains(true);
-            ExecutionPlan oep12 = topDownSearchRule12.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (EarlyStop + Chain) took: " + elapsedTime + " ms");
-            oep12.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            TopDownSearch topDownSearchRule2 = new TopDownSearch(physicalPlan, verbose);
-            topDownSearchRule2.setPruneByChains(true);
-            ExecutionPlan oep2 = topDownSearchRule2.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (Chain) took: " + elapsedTime + " ms");
-            oep2.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            TopDownSearch topDownSearchRule3 = new TopDownSearch(physicalPlan, verbose);
-            topDownSearchRule3.setPruneBySafeEdges(true);
-            ExecutionPlan oep3 = topDownSearchRule3.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (SafeEdge) took: " + elapsedTime + " ms");
-            oep3.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_3.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            TopDownSearch topDownSearchRule1 = new TopDownSearch(physicalPlan, verbose);
-            topDownSearchRule1.setPruneByEarlyStopping(true);
-            ExecutionPlan oep1 = topDownSearchRule1.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (EarlyStop) took: " + elapsedTime + " ms");
-            oep1.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            TopDownSearch topDownSearchBaseline = new TopDownSearch(physicalPlan, verbose);
-            ExecutionPlan oepOfBaseline = topDownSearchBaseline.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Baseline search took: " + elapsedTime + " ms");
-            oepOfBaseline.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_baseline.png").toString());
+            for (int i = 0; i < 16; i++) {
+                boolean a = (i & 8) != 0; // 8 is binary 1000
+                boolean b = (i & 4) != 0; // 4 is binary 0100
+                boolean c = (i & 2) != 0; // 2 is binary 0010
+                boolean d = (i & 1) != 0; // 1 is binary 0001
+                allExpResults.add(runSingleTopDownExperiment(outputPath, verbose, physicalPlan, a, b, c, d));
+            }
         } else {
-            System.out.println(System.lineSeparator());
             System.out.println("Starting Bottom-up Search");
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            BottomUpSearch greedySearcher = new BottomUpSearch(physicalPlan, verbose);
-            greedySearcher.setPruneByChains(true);
-            greedySearcher.setPruneBySafeEdges(true);
-            greedySearcher.setGreedy(true);
-            ExecutionPlan greedyOptimum = greedySearcher.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using greedy took: " + elapsedTime + " ms");
-            greedyOptimum.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_greedy.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            BottomUpSearch bottomUpSearchRule123 = new BottomUpSearch(physicalPlan, verbose);
-            bottomUpSearchRule123.setPruneBySafeEdges(true);
-            bottomUpSearchRule123.setPruneByChains(true);
-            bottomUpSearchRule123.setPruneByEarlyStopping(true);
-            ExecutionPlan oep123 = bottomUpSearchRule123.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (EarlyStop + Chain + SafeEdge) took: " + elapsedTime + " ms");
-            oep123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2_3.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            BottomUpSearch bottomUpSearchRule23 = new BottomUpSearch(physicalPlan, verbose);
-            bottomUpSearchRule23.setPruneBySafeEdges(true);
-            bottomUpSearchRule23.setPruneByChains(true);
-            ExecutionPlan oep23 = bottomUpSearchRule23.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (Chain + SafeEdge) took: " + elapsedTime + " ms");
-            oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2_3.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            BottomUpSearch bottomUpSearchRule13 = new BottomUpSearch(physicalPlan, verbose);
-            bottomUpSearchRule13.setPruneBySafeEdges(true);
-            bottomUpSearchRule13.setPruneByEarlyStopping(true);
-            ExecutionPlan oep13 = bottomUpSearchRule13.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (EarlyStop + SafeEdge) took: " + elapsedTime + " ms");
-            oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_3.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            BottomUpSearch bottomUpSearchRule12 = new BottomUpSearch(physicalPlan, verbose);
-            bottomUpSearchRule12.setPruneByChains(true);
-            bottomUpSearchRule12.setPruneByEarlyStopping(true);
-            ExecutionPlan oep12 = bottomUpSearchRule12.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (EarlyStop + Chain) took: " + elapsedTime + " ms");
-            oep123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1_2.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            BottomUpSearch bottomUpSearchRule2 = new BottomUpSearch(physicalPlan, verbose);
-            bottomUpSearchRule2.setPruneByChains(true);
-            ExecutionPlan oep2 = bottomUpSearchRule2.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (Chain) took: " + elapsedTime + " ms");
-            oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_2.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            BottomUpSearch bottomUpSearchRule3 = new BottomUpSearch(physicalPlan, verbose);
-            bottomUpSearchRule3.setPruneBySafeEdges(true);
-            ExecutionPlan oep3 = bottomUpSearchRule3.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (SafeEdge) took: " + elapsedTime + " ms");
-            oep23.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_3.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            BottomUpSearch bottomUpSearchRule1 = new BottomUpSearch(physicalPlan, verbose);
-            bottomUpSearchRule1.setPruneByChains(true);
-            bottomUpSearchRule1.setPruneByEarlyStopping(true);
-            ExecutionPlan oep1 = bottomUpSearchRule1.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Using (EarlyStop) took: " + elapsedTime + " ms");
-            oep123.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_rule_1.png").toString());
-
-            System.out.println(System.lineSeparator());
-            startTime = System.currentTimeMillis();
-            BottomUpSearch bottomUpSearchBaseline = new BottomUpSearch(physicalPlan, verbose);
-            ExecutionPlan oepOfBaseline = bottomUpSearchBaseline.execute();
-            endTime = System.currentTimeMillis();
-            elapsedTime = endTime - startTime;
-            System.out.println("Baseline search took: " + elapsedTime + " ms");
-            oepOfBaseline.renderDAGImageToPath(outputPath.resolve("optimal_schedulable_physical_DAG_baseline.png").toString());
+            for (int i = 0; i < 16; i++) {
+                boolean a = (i & 8) != 0; // 8 is binary 1000
+                boolean b = (i & 4) != 0; // 4 is binary 0100
+                boolean c = (i & 2) != 0; // 2 is binary 0010
+                boolean d = (i & 1) != 0; // 1 is binary 0001
+                allExpResults.add(runSingleBottomUpExperiment(outputPath, verbose, physicalPlan, a, b, c, d));
+            }
         }
+        return allExpResults;
+    }
+
+    private static Map<String, String> runSingleTopDownExperiment(Path outputPath, boolean verbose, PhysicalPlan physicalPlan, Boolean pruneByChains, Boolean pruneBySafeEdges, Boolean pruneByEarlyStopping, Boolean greedy) {
+        Map<String, String> experimentResults = new HashMap<>();
+        experimentResults.put("greedy", greedy.toString());
+        experimentResults.put("pruneByChains", pruneByChains.toString());
+        experimentResults.put("pruneBySafeEdges", pruneBySafeEdges.toString());
+        experimentResults.put("pruneByEarlyStopping", pruneByEarlyStopping.toString());
+        System.out.println(System.lineSeparator());
+        Long startTime = System.currentTimeMillis();
+        TopDownSearch searcher = new TopDownSearch(physicalPlan, verbose);
+        searcher.setPruneByChains(pruneByChains);
+        searcher.setPruneBySafeEdges(pruneBySafeEdges);
+        searcher.setPruneByEarlyStopping(pruneByEarlyStopping);
+        searcher.setGreedy(greedy);
+        ExecutionPlan searchResult = searcher.execute();
+        Long endTime = System.currentTimeMillis();
+        Long elapsedTime = endTime - startTime;
+        System.out.println(String.format("greedy_%b_chain_%b_safeEdge_%b_earlyStop_%b", greedy, pruneByChains, pruneBySafeEdges, pruneByEarlyStopping) + "took: " + elapsedTime + " ms");
+        experimentResults.put("searchFinished", String.valueOf(searcher.getSearchQueue().isEmpty()));
+        experimentResults.put("searchTime", elapsedTime.toString());
+        experimentResults.put("numStatesExplored", String.valueOf(searcher.getVisitedSet().size()));
+        experimentResults.put("osepCost", String.valueOf(searchResult.getCost()));
+        searchResult.renderDAGImageToPath(outputPath.resolve(String.format("greedy_%b_chain_%b_safeEdge_%b_earlyStop_%b", greedy, pruneByChains, pruneBySafeEdges, pruneByEarlyStopping)).toString());
+        return experimentResults;
+    }
+
+    private static Map<String, String> runSingleBottomUpExperiment(Path outputPath, boolean verbose, PhysicalPlan physicalPlan, Boolean pruneByChains, Boolean pruneBySafeEdges, Boolean pruneByEarlyStopping, Boolean greedy) {
+        Map<String, String> experimentResults = new HashMap<>();
+        experimentResults.put("greedy", greedy.toString());
+        experimentResults.put("pruneByChains", pruneByChains.toString());
+        experimentResults.put("pruneBySafeEdges", pruneBySafeEdges.toString());
+        experimentResults.put("pruneByEarlyStopping", pruneByEarlyStopping.toString());
+        System.out.println(System.lineSeparator());
+        Long startTime = System.currentTimeMillis();
+        BottomUpSearch searcher = new BottomUpSearch(physicalPlan, verbose);
+        searcher.setPruneByChains(pruneByChains);
+        searcher.setPruneBySafeEdges(pruneBySafeEdges);
+        searcher.setPruneByEarlyStopping(pruneByEarlyStopping);
+        searcher.setGreedy(greedy);
+        ExecutionPlan searchResult = searcher.execute();
+        Long endTime = System.currentTimeMillis();
+        Long elapsedTime = endTime - startTime;
+        System.out.println(String.format("greedy_%b_chain_%b_safeEdge_%b_earlyStop_%b", greedy, pruneByChains, pruneBySafeEdges, pruneByEarlyStopping) + "took: " + elapsedTime + " ms");
+        experimentResults.put("searchFinished", String.valueOf(searcher.getSearchQueue().isEmpty()));
+        experimentResults.put("searchTime", elapsedTime.toString());
+        experimentResults.put("numStatesExplored", String.valueOf(searcher.getVisitedSet().size()));
+        experimentResults.put("osepCost", String.valueOf(searchResult.getCost()));
+        searchResult.renderDAGImageToPath(outputPath.resolve(String.format("greedy_%b_chain_%b_safeEdge_%b_earlyStop_%b", greedy, pruneByChains, pruneBySafeEdges, pruneByEarlyStopping)).toString());
+        return experimentResults;
     }
 }

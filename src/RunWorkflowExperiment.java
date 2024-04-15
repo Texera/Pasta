@@ -73,8 +73,9 @@ public class RunWorkflowExperiment {
 
         // Shutdown the executor service
         executor.shutdown();
-//
-//        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("topDown"), false, true);
-//        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("bottomUp"), false, false);
+
+
+        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("topDown"), false, true);
+        ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, outputPath.resolve("bottomUp"), false, false);
     }
 }

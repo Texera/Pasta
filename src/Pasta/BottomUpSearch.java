@@ -15,7 +15,17 @@ import java.util.stream.Collectors;
 public class BottomUpSearch {
     private final PhysicalPlan inputPhysicalPlan;
     private final BigInteger searchSpaceSize;
+
+    public LinkedList<ExecutionPlan> getSearchQueue() {
+        return searchQueue;
+    }
+
     private final LinkedList<ExecutionPlan> searchQueue = new LinkedList<>();
+
+    public HashSet<ExecutionPlan> getVisitedSet() {
+        return visitedSet;
+    }
+
     private final HashSet<ExecutionPlan> visitedSet = new HashSet<>();
     private final HashSet<ExecutionPlan> schedulableStates = new HashSet<>();
 

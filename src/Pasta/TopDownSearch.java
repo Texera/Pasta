@@ -14,7 +14,17 @@ import java.util.stream.Collectors;
 public class TopDownSearch {
     private final PhysicalPlan inputPhysicalPlan;
     private final BigInteger searchSpaceSize;
+
+    public LinkedList<ExecutionPlan> getSearchQueue() {
+        return searchQueue;
+    }
+
     private final LinkedList<ExecutionPlan> searchQueue = new LinkedList<>();
+
+    public HashSet<ExecutionPlan> getVisitedSet() {
+        return visitedSet;
+    }
+
     private final HashSet<ExecutionPlan> visitedSet = new HashSet<>();
 
     private final HashSet<ExecutionPlan> hopelessStates = new HashSet<>();
@@ -27,6 +37,7 @@ public class TopDownSearch {
     private boolean pruneBySafeEdges = false;
     private boolean pruneByEarlyStopping = false;
     private boolean isGreedy = false;
+    private boolean searchFinished = false;
 
     public TopDownSearch(PhysicalPlan inputPhysicalPlan, boolean verbose) {
         this.inputPhysicalPlan = inputPhysicalPlan;
