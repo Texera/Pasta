@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.stream.Stream;
 
-public class AllPipelinedPlanSchedulabilityCheck {
+public class AllPipelinedPlanSchedulabilityCheckOnDotFiles {
     public static void main(String[] args) {
         if (args.length < 2) {
             System.out.println("Please provide the directory path for workflow source files and the output directory path.");

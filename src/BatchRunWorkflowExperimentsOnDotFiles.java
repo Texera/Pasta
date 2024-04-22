@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-public class BatchRunWorkflowExperiments {
+public class BatchRunWorkflowExperimentsOnDotFiles {
     public static void main(String[] args) {
         if (args.length < 2) {
             System.out.println("Please provide the directory path for workflow source files and the output directory path.");

@@ -1,8 +1,6 @@
 import DualEdgeDAG.DualEdge;
 import ExperimentRunner.ExperimentRunner;
-import WorkflowParser.AlteryxYXMDParser;
 import WorkflowParser.DotFileParser;
-import WorkflowParser.KNIMESummaryXMLParser;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import java.io.BufferedWriter;
@@ -13,7 +11,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public class RunWorkflowExperimentsOnSingleDotFile {
     public static void main(String[] args) {
@@ -63,7 +60,7 @@ public class RunWorkflowExperimentsOnSingleDotFile {
             return;
         }
 
-        List<Map<String, String>> topDownResults = ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, baseOutputPath.resolve(fileName).resolve("topDown"), false, true);
+        List<Map<String, String>> topDownResults = ExperimentRunner.runOptimalExecutionPlanFinder(workflowDAG, baseOutputPath.resolve(fileName).resolve("topDown"), true, true);
         topDownResults.forEach(individualResult->{
             try {
                 csvWriter.write(fileName + ","

@@ -41,27 +41,6 @@ public class DotFileParser {
         }
     }
 
-    public static class DotFileEdge {
-        private int from;
-        private int to;
-        private Map<String, Attribute> attributes;
-
-        public DotFileEdge(int from, int to, Map<String, Attribute> attributes) {
-            this.from = from;
-            this.to = to;
-            this.attributes = attributes;
-        }
-
-        @Override
-        public String toString() {
-            return "Edge from " + from + " to " + to + " with attributes: " + attributes;
-        }
-    }
-
-
-    private static final Set<String> blockingOpNames = readBlockingOperatorNames("src/WorkflowParser/KNIMEBlockingPorts.conf");
-
-
     private static Set<String> readBlockingOperatorNames(String configPath) {
         Set<String> configSet = new HashSet<>();
 
@@ -109,8 +88,6 @@ public class DotFileParser {
         graph.edgeSet().forEach(initialDualEdge -> {
             DotFileVertex upstreamVertex = graph.getEdgeSource(initialDualEdge);
             DotFileVertex downstreamVertex = graph.getEdgeTarget(initialDualEdge);
-//            boolean isEdgeBlocking = initialDualEdge.isBlkOrMat() || blockingOpNames.contains(upstreamVertex.label) || downstreamVertex.label.contains("Joiner") && graph.incomingEdgesOf(downstreamVertex).stream().map(incomingEdge -> graph.getEdgeSource(incomingEdge).getId()).max(Integer::compareTo).get().equals(upstreamVertex.getId());
-//
             dualDAG.addEdge(upstreamVertex.getId(), downstreamVertex.getId(), new DualEdge(initialDualEdge.isBlkOrMat()));
             dualDAG.setEdgeWeight(upstreamVertex.getId(), downstreamVertex.getId(), weights.get(initialDualEdge));
         });

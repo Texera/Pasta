@@ -1,0 +1,6 @@
+digraph {
+	"5400285081714527009_2" [label=GroupBy]
+	"5400285081714527009_1" [label="CSV Reader"]
+	"5400285081714527009_1" -> "5400285081714527009_2" [label="data: 340741; is_blocking: False"]
+	rankdir=LR
+}
