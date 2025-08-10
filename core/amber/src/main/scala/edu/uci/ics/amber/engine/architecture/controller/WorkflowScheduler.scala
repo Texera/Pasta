@@ -29,7 +29,8 @@ import edu.uci.ics.amber.engine.architecture.scheduling.{
 
 class WorkflowScheduler(
     workflowContext: WorkflowContext,
-    actorId: ActorVirtualIdentity
+    actorId: ActorVirtualIdentity,
+    costFunction: String = "WALL_CLOCK_RUNTIME"
 ) extends java.io.Serializable {
   var physicalPlan: PhysicalPlan = _
   private var schedule: Schedule = _
@@ -37,14 +38,16 @@ class WorkflowScheduler(
   /**
     * Update the schedule to be executed, based on the given physicalPlan.
     */
-  def updateSchedule(physicalPlan: PhysicalPlan): Unit = {
+  def updateSchedule(physicalPlan: PhysicalPlan, schedulingMethod: String = "ALL_MAT"): Unit = {
     // generate a schedule using a region plan generator.
     val (generatedSchedule, updatedPhysicalPlan) =
       // CostBasedRegionPlanGenerator considers costs to try to find an optimal plan.
       new CostBasedScheduleGenerator(
         workflowContext,
         physicalPlan,
-        actorId
+        actorId,
+        costFunction = this.costFunction,
+        schedulingMethod = schedulingMethod
       ).generate()
     this.schedule = generatedSchedule
     this.physicalPlan = updatedPhysicalPlan

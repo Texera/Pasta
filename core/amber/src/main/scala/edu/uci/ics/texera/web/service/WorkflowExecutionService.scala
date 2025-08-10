@@ -121,7 +121,8 @@ class WorkflowExecutionService(
       workflow.context,
       workflow.physicalPlan,
       controllerConfig,
-      errorHandler
+      errorHandler,
+      schedulingMethod = request.executionName
     )
     executionReconfigurationService =
       new ExecutionReconfigurationService(client, executionStateStore, workflow)

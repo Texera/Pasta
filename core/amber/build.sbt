@@ -1,3 +1,4 @@
+import scala.collection.immutable.Seq
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -220,7 +221,11 @@ libraryDependencies += "io.github.redouane59.twitter" % "twittered" % "2.21"
 libraryDependencies += "org.jooq" % "jooq" % "3.14.16"
 
 // https://mvnrepository.com/artifact/org.jgrapht/jgrapht-core
-libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.4.0"
+libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.5.2"
+
+libraryDependencies += "org.jgrapht" % "jgrapht-io" % "1.5.2"
+
+libraryDependencies += "org.jgrapht" % "jgrapht-ext" % "1.5.2"
 
 // https://mvnrepository.com/artifact/io.altoo/akka-kryo-serialization
 libraryDependencies += "io.altoo" %% "akka-kryo-serialization" % "2.5.2"
@@ -273,4 +278,9 @@ libraryDependencies += "org.scala-lang.modules" %% "scala-collection-contrib" % 
 // https://mvnrepository.com/artifact/io.github.kostaskougios/cloning
 libraryDependencies += "io.github.kostaskougios" % "cloning" % "1.10.3"
 
+libraryDependencies ++= Seq(
+  "io.circe" %% "circe-core" % "0.14.1",
+  "io.circe" %% "circe-generic" % "0.14.1",
+  "io.circe" %% "circe-parser" % "0.14.1"
+)
 

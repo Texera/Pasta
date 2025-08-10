@@ -30,12 +30,13 @@ import edu.uci.ics.amber.core.virtualidentity.{
 import edu.uci.ics.amber.util.VirtualIdentityUtils
 import org.jgrapht.alg.connectivity.BiconnectivityInspector
 import org.jgrapht.alg.shortestpath.AllDirectedPaths
-import org.jgrapht.alg.util.NeighborCache
 import org.jgrapht.graph.DirectedAcyclicGraph
 import org.jgrapht.traverse.TopologicalOrderIterator
 import org.jgrapht.util.SupplierUtil
 
-import scala.jdk.CollectionConverters.{CollectionHasAsScala, IteratorHasAsScala}
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import scala.collection.mutable
+import scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, SetHasAsScala}
 
 case class PhysicalPlan(
     operators: Set[PhysicalOp],
@@ -50,7 +51,7 @@ case class PhysicalPlan(
     val jgraphtDag = new DirectedAcyclicGraph[PhysicalOpIdentity, PhysicalLink](
       null, // vertexSupplier
       SupplierUtil.createSupplier(classOf[PhysicalLink]), // edgeSupplier
-      false, // weighted
+      true, // weighted
       true // allowMultipleEdges
     )
     operatorMap.foreach(op => jgraphtDag.addVertex(op._1))
@@ -59,6 +60,13 @@ case class PhysicalPlan(
   }
 
   @transient lazy val maxChains: Set[Set[PhysicalLink]] = this.getMaxChains
+
+  @transient lazy val nonCleanEdgeNonBlockingLinks: Set[PhysicalLink] =
+    this.getNonBridgeNonBlockingLinks
+
+  def getNonBlockingLinks: Set[PhysicalLink] = {
+    this.links.diff(getBlockingAndDependeeLinks)
+  }
 
   @JsonIgnore
   def getSourceOperatorIds: Set[PhysicalOpIdentity] =
