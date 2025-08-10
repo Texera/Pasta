@@ -19,16 +19,10 @@
 
 package edu.uci.ics.amber.engine.architecture.scheduling
 
-import edu.uci.ics.amber.config.ApplicationConfig
 import edu.uci.ics.amber.core.storage.VFSURIFactory.createResultURI
 import edu.uci.ics.amber.core.virtualidentity.{ActorVirtualIdentity, PhysicalOpIdentity}
-import edu.uci.ics.amber.core.workflow.{
-  GlobalPortIdentity,
-  PhysicalLink,
-  PhysicalOp,
-  PhysicalPlan,
-  WorkflowContext
-}
+import edu.uci.ics.amber.core.workflow.WorkflowParser.renderInputPhysicalPlanToFile
+import edu.uci.ics.amber.core.workflow._
 import edu.uci.ics.amber.engine.architecture.scheduling.config.{
   IntermediateInputPortConfig,
   OutputPortConfig,
@@ -37,22 +31,22 @@ import edu.uci.ics.amber.engine.architecture.scheduling.config.{
 import edu.uci.ics.amber.engine.common.AmberLogging
 import org.jgrapht.Graph
 import org.jgrapht.alg.connectivity.BiconnectivityInspector
+import org.jgrapht.alg.cycle.HawickJamesSimpleCycles
 import org.jgrapht.graph.{DirectedAcyclicGraph, DirectedPseudograph}
+import org.jgrapht.util.SupplierUtil
 
 import java.net.URI
-import java.util.concurrent.TimeoutException
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
 import scala.jdk.CollectionConverters._
 import scala.util.control.Breaks.{break, breakable}
-import scala.util.{Failure, Success, Try}
 
 class CostBasedScheduleGenerator(
     workflowContext: WorkflowContext,
     initialPhysicalPlan: PhysicalPlan,
-    val actorId: ActorVirtualIdentity
+    val actorId: ActorVirtualIdentity,
+    costFunction: String = "WALL_CLOCK_RUNTIME",
+    schedulingMethod: String = "ALL_MAT"
 ) extends ScheduleGenerator(
       workflowContext,
       initialPhysicalPlan
@@ -63,12 +57,31 @@ class CostBasedScheduleGenerator(
       state: Set[PhysicalLink],
       regionDAG: DirectedAcyclicGraph[Region, RegionLink],
       cost: Double,
+      searchFinished: Boolean = true,
       searchTimeNanoSeconds: Long = 0,
       numStatesExplored: Int = 0
   )
 
   private val costEstimator =
     new DefaultCostEstimator(workflowContext = workflowContext, actorId = actorId)
+
+  def getNaiveSchedulability(): Boolean = {
+    println("Analyzing schedulability")
+    tryConnectRegionDAG(this.physicalPlan.getBlockingAndDependeeLinks) match {
+      case Left(_)  => true
+      case Right(_) => false
+    }
+  }
+
+  def runPasta(): SearchResult = {
+    val allResults: Set[SearchResult] = Set(
+      topDownSearch(globalSearch = true),
+      bottomUpSearch(globalSearch = true),
+      topDownSearch(),
+      bottomUpSearch()
+    )
+    allResults.minBy(res => res.cost)
+  }
 
   def generate(): (Schedule, PhysicalPlan) = {
     val startTime = System.nanoTime()
@@ -262,7 +275,12 @@ class CostBasedScheduleGenerator(
   private def tryConnectRegionDAG(
       matEdges: Set[PhysicalLink]
   ): Either[DirectedAcyclicGraph[Region, RegionLink], DirectedPseudograph[Region, RegionLink]] = {
-    val regionDAG = new DirectedAcyclicGraph[Region, RegionLink](classOf[RegionLink])
+    val regionDAG = new DirectedAcyclicGraph[Region, RegionLink](
+      null, // vertexSupplier
+      SupplierUtil.createSupplier(classOf[RegionLink]), // edgeSupplier
+      true, // weighted
+      true // allowMultipleEdges
+    )
     val regionGraph = new DirectedPseudograph[Region, RegionLink](classOf[RegionLink])
     val opToRegionMap = new mutable.HashMap[PhysicalOpIdentity, Region]
     createRegions(physicalPlan, matEdges).foreach(region => {
@@ -274,9 +292,14 @@ class CostBasedScheduleGenerator(
     matEdges.foreach(matEdge => {
       val fromRegion = opToRegionMap(matEdge.fromOpId)
       val toRegion = opToRegionMap(matEdge.toOpId)
-      regionGraph.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
+      regionGraph.addEdge(
+        fromRegion,
+        toRegion,
+        RegionLink(fromRegion.id, toRegion.id, Some(matEdge))
+      )
       try {
-        regionDAG.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
+        regionDAG
+          .addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id, Some(matEdge)))
       } catch {
         case _: IllegalArgumentException =>
           isAcyclic = false
@@ -293,38 +316,82 @@ class CostBasedScheduleGenerator(
     * @return A region DAG.
     */
   private def createRegionDAG(): DirectedAcyclicGraph[Region, RegionLink] = {
-    val searchResultFuture: Future[SearchResult] = Future {
-      if (ApplicationConfig.useTopDownSearch)
-        topDownSearch(globalSearch = ApplicationConfig.useGlobalSearch)
-      else
-        bottomUpSearch(globalSearch = ApplicationConfig.useGlobalSearch)
-    }
-    val searchResult = Try(
-      Await.result(searchResultFuture, ApplicationConfig.searchTimeoutMilliseconds.milliseconds)
-    ) match {
-      case Failure(exception) =>
-        exception match {
-          case _: TimeoutException =>
-            logger.warn(
-              s"WID: ${workflowContext.workflowId.id}, EID: ${workflowContext.executionId.id}, search for region plan " +
-                s"timed out, falling back to bottom-up greedy search.",
-              exception
-            )
-            bottomUpSearch()
-          case _ => throw new RuntimeException(exception)
-        }
+    renderInputPhysicalPlanToFile(
+      physicalPlan = physicalPlan,
+      imageOutputPath = "/Users/xzliu/Downloads/" + workflowContext.workflowId.id + ".png"
+    )
+    println(s"numOperators: ${physicalPlan.operators.size}, numLinks: ${physicalPlan.links.size}")
 
-      case Success(result) =>
-        result
+    val searchResult = schedulingMethod match {
+      case "ALL_MAT"          => allMatMethod
+      case "TOP_DOWN_GLOBAL"  => topDownSearch(globalSearch = true)
+      case "BOTTOM_UP_GLOBAL" => bottomUpSearch(globalSearch = true)
+      case "TOP_DOWN_GREEDY"  => topDownSearch()
+      case "BOTTOM_UP_GREEDY" => bottomUpSearch()
+      case "BASELINE"         => baselineMethod
+      case _                  => allMatMethod
     }
-    logger.info(
-      s"WID: ${workflowContext.workflowId.id}, EID: ${workflowContext.executionId.id}, search time: " +
-        s"${searchResult.searchTimeNanoSeconds / 1e6} ms."
+    logger.warn(
+      s"WID: ${workflowContext.workflowId}, EID: ${workflowContext.executionId}, Scheduling method: $schedulingMethod, Cost of schedule: ${searchResult.cost}, scheduler ran for: ${searchResult.searchTimeNanoSeconds / 1e6}"
     )
 
     val regionDAG = searchResult.regionDAG
     allocateResource(regionDAG)
     regionDAG
+  }
+
+  def allMatMethod: SearchResult = {
+    val startTime = System.nanoTime()
+    val allNonMaterializedLinks = this.physicalPlan.links
+    var cost = 0.0
+    SearchResult(
+      state = allNonMaterializedLinks.diff(physicalPlan.getBlockingAndDependeeLinks),
+      regionDAG = tryConnectRegionDAG(allNonMaterializedLinks) match {
+        case Left(regionDAG) => {
+          cost = evaluate(
+            RegionPlan(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
+          )
+          regionDAG
+        }
+        case Right(_) =>
+          throw new RuntimeException("All-materialized plan cannot be cyclic.")
+      },
+      cost = cost,
+      searchTimeNanoSeconds = System.nanoTime() - startTime
+    )
+  }
+
+  def baselineMethod: SearchResult = {
+    val startTime = System.nanoTime()
+    var currentRegionPlan = physicalPlan.links
+    physicalPlan
+      .topologicalIterator()
+      .foreach(physicalOpId => {
+        physicalPlan
+          .getUpstreamPhysicalLinks(physicalOpId)
+          .foreach(physicalLink => {
+            if (!physicalPlan.getBlockingAndDependeeLinks.contains(physicalLink)) {
+              val newRegionPlan = currentRegionPlan - physicalLink
+              tryConnectRegionDAG(newRegionPlan) match {
+                case Left(_)  => currentRegionPlan = newRegionPlan
+                case Right(_) =>
+              }
+            }
+          })
+      })
+    tryConnectRegionDAG(currentRegionPlan) match {
+      case Left(regionDAG) =>
+        val searchTime = System.nanoTime() - startTime
+        SearchResult(
+          state = currentRegionPlan.diff(physicalPlan.getBlockingAndDependeeLinks),
+          regionDAG = regionDAG,
+          cost = evaluate(
+            RegionPlan(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
+          ),
+          searchTimeNanoSeconds = searchTime
+        )
+      case Right(_) => throw new Exception("Baseline method should return a region DAG.")
+    }
   }
 
   /**
@@ -346,7 +413,7 @@ class CostBasedScheduleGenerator(
     val startTime = System.nanoTime()
     val originalNonBlockingEdges =
       if (oCleanEdges) {
-        physicalPlan.getNonBridgeNonBlockingLinks
+        physicalPlan.nonCleanEdgeNonBlockingLinks
       } else {
         physicalPlan.links.diff(
           physicalPlan.getBlockingAndDependeeLinks
@@ -366,6 +433,13 @@ class CostBasedScheduleGenerator(
     )
 
     while (queue.nonEmpty) {
+      val searchTime = System.nanoTime() - startTime
+      if (searchTime > 3e11)
+        return bestResult.copy(
+          searchTimeNanoSeconds = searchTime,
+          searchFinished = false,
+          numStatesExplored = visited.size
+        )
       // A state is represented as a set of materialized non-blocking edges.
       val currentState = queue.dequeue()
       breakable {
@@ -425,6 +499,16 @@ class CostBasedScheduleGenerator(
           candidateEdges = candidateEdges.diff(
             edgesInChainWithMaterializedEdges
           ) // Edges in chain with blocking edges should not be materialized
+          if (this.costFunction == "MATERIALIZATION_SIZES") {
+            val nonMinCostEdgesInChainWithAllNonBlockingEdge = physicalPlan.maxChains
+              .filter(chainSet =>
+                chainSet.forall(link => physicalPlan.getNonBlockingLinks.contains(link))
+              )
+              .flatMap(chainSet =>
+                chainSet - chainSet.minBy(link => physicalPlan.dag.getEdgeWeight(link))
+              )
+            candidateEdges = candidateEdges.diff(nonMinCostEdgesInChainWithAllNonBlockingEdge)
+          }
         }
 
         val unvisitedNeighborStates = candidateEdges
@@ -488,7 +572,8 @@ class CostBasedScheduleGenerator(
   def topDownSearch(
       globalSearch: Boolean = false,
       oChains: Boolean = true,
-      oCleanEdges: Boolean = true
+      oCleanEdges: Boolean = true,
+      oEarlyStop: Boolean = true
   ): SearchResult = {
     val startTime = System.nanoTime()
     // Starting from a state where all non-blocking edges are materialized
@@ -501,14 +586,26 @@ class CostBasedScheduleGenerator(
       val edgesInChainWithBlockingEdge = physicalPlan.maxChains
         .filter(chain => chain.intersect(physicalPlan.getBlockingAndDependeeLinks).nonEmpty)
         .flatten
-      originalSeedState.diff(edgesInChainWithBlockingEdge)
+      var newSeedState = originalSeedState.diff(edgesInChainWithBlockingEdge)
+      if (this.costFunction == "MATERIALIZATION_SIZES") {
+        val nonMinCostEdgesInChainWithAllNonBlockingEdge = physicalPlan.maxChains
+          .filter(chainSet =>
+            chainSet.forall(link => physicalPlan.getNonBlockingLinks.contains(link))
+          )
+          .flatMap(chainSet =>
+            chainSet - chainSet.minBy(link => physicalPlan.dag.getEdgeWeight(link))
+          )
+        newSeedState = newSeedState.diff(nonMinCostEdgesInChainWithAllNonBlockingEdge)
+      }
+      newSeedState
     } else {
       originalSeedState
     }
 
     // Clean edge optimization: a clean edge should not be materialized
     val finalSeedState = if (oCleanEdges) {
-      seedStateOptimizedByChainsIfApplicable.intersect(physicalPlan.getNonBridgeNonBlockingLinks)
+      val nonCleanEdges = physicalPlan.nonCleanEdgeNonBlockingLinks
+      seedStateOptimizedByChainsIfApplicable.intersect(nonCleanEdges)
     } else {
       seedStateOptimizedByChainsIfApplicable
     }
@@ -517,6 +614,8 @@ class CostBasedScheduleGenerator(
     val queue: mutable.Queue[Set[PhysicalLink]] = mutable.Queue(finalSeedState)
     // Keep track of visited states to avoid revisiting
     val visited: mutable.Set[Set[PhysicalLink]] = mutable.Set.empty[Set[PhysicalLink]]
+    // For earlyStop technique
+    val hopelessStates: mutable.Set[Set[PhysicalLink]] = mutable.Set.empty[Set[PhysicalLink]]
     // Initialize the bestResult with an impossible high cost for comparison
     var bestResult: SearchResult = SearchResult(
       state = Set.empty,
@@ -525,6 +624,13 @@ class CostBasedScheduleGenerator(
     )
 
     while (queue.nonEmpty) {
+      val searchTime = System.nanoTime() - startTime
+      if (searchTime > 3e11)
+        return bestResult.copy(
+          searchTimeNanoSeconds = searchTime,
+          searchFinished = false,
+          numStatesExplored = visited.size
+        )
       val currentState = queue.dequeue()
       visited.add(currentState)
       tryConnectRegionDAG(
@@ -534,8 +640,38 @@ class CostBasedScheduleGenerator(
           updateOptimumIfApplicable(regionDAG)
           addNeighborStatesToFrontier()
         // No need to explore further
-        case Right(_) =>
-          addNeighborStatesToFrontier()
+        case Right(regionGraph) =>
+          var isCurrentStateHopeless = false
+          if (oEarlyStop) {
+            // Check if the current state is also hopeless
+            val physicalLinksInRegionCycles = new HawickJamesSimpleCycles(regionGraph)
+              .findSimpleCycles()
+              .flatMap { cycle: java.util.List[Region] =>
+                cycle.toList
+                  .sliding(2)
+                  .map {
+                    case List(v1, v2) => regionGraph.getAllEdges(v1, v2).toSet
+                    case _            => Set.empty[RegionLink]
+                  }
+              }
+              .toSet
+              .flatten
+              .map { regionLink =>
+                regionLink.originalPhysicalLink match {
+                  case Some(physicalLink: PhysicalLink) => physicalLink
+                  case None                             => PhysicalLink.defaultInstance
+                }
+              }
+            isCurrentStateHopeless = physicalPlan.getBlockingAndDependeeLinks
+              .intersect(physicalLinksInRegionCycles)
+              .nonEmpty
+            if (isCurrentStateHopeless) {
+              hopelessStates.add(currentState)
+            }
+          }
+          if (!oEarlyStop || !isCurrentStateHopeless) {
+            addNeighborStatesToFrontier()
+          }
       }
 
       /**
@@ -560,11 +696,17 @@ class CostBasedScheduleGenerator(
         * neighbor with the lowest cost will be included.
         */
       def addNeighborStatesToFrontier(): Unit = {
-        val unvisitedNeighborStates = currentState
+        var unvisitedNeighborStates = currentState
           .map(edge => currentState - edge)
           .filter(neighborState =>
             !visited.contains(neighborState) && !queue.contains(neighborState)
           )
+
+        if (oEarlyStop) {
+          unvisitedNeighborStates = unvisitedNeighborStates.filter(neighborState =>
+            !hopelessStates.exists(ancestorState => neighborState.subsetOf(ancestorState))
+          )
+        }
 
         if (globalSearch) {
           // include all unvisited neighbors
@@ -608,9 +750,18 @@ class CostBasedScheduleGenerator(
     * @return A cost determined by the cost estimator.
     */
   private def evaluate(regionPlan: RegionPlan): Double = {
-    val schedule = generateScheduleFromRegionPlan(regionPlan)
-    // In the future we may allow multiple regions in a level and split the resources.
-    schedule.map(level => level.map(region => costEstimator.estimate(region, 1)).sum).sum
+    this.costFunction match {
+      case "WALL_CLOCK_RUNTIME" =>
+        val schedule = generateScheduleFromRegionPlan(regionPlan)
+        // In the future we may allow multiple regions in a level and split the resources.
+        schedule.map(level => level.map(region => costEstimator.estimate(region, 1)).sum).sum
+      case "MATERIALIZATION_SIZES" =>
+        val regionLinks = regionPlan.regionLinks
+        regionLinks.toList
+          .map(regionLink => physicalPlan.dag.getEdgeWeight(regionLink.originalPhysicalLink.get))
+          .sum
+      case _ => throw new UnsupportedOperationException("Unsupported cost function!")
+    }
   }
 
 }

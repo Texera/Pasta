@@ -144,10 +144,10 @@ export class MenuComponent implements OnInit, OnDestroy {
         this.executionDuration = event.duration;
         this.durationUpdateSubscription.unsubscribe();
         if (event.isRunning) {
-          this.durationUpdateSubscription = timer(1000, 1000)
+          this.durationUpdateSubscription = timer(10, 10)
             .pipe(untilDestroyed(this))
             .subscribe(() => {
-              this.executionDuration += 1000;
+              this.executionDuration += 10;
             });
         }
       });

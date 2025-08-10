@@ -62,7 +62,8 @@ private[client] object ClientActor {
   case class InitializeRequest(
       workflowContext: WorkflowContext,
       physicalPlan: PhysicalPlan,
-      controllerConfig: ControllerConfig
+      controllerConfig: ControllerConfig,
+      schedulingMethod: String = "ALL_MAT"
   )
 
   case class ObservableRequest(pf: PartialFunction[Any, Unit])
@@ -94,10 +95,10 @@ private[client] class ClientActor extends Actor with AmberLogging {
   }
 
   override def receive: Receive = {
-    case InitializeRequest(workflowContext, physicalPlan, controllerConfig) =>
+    case InitializeRequest(workflowContext, physicalPlan, controllerConfig, schedulingMethod) =>
       assert(controller == null)
       controller = context.actorOf(
-        Controller.props(workflowContext, physicalPlan, controllerConfig)
+        Controller.props(workflowContext, physicalPlan, controllerConfig, schedulingMethod)
       )
       sender() ! Ack
     case CreditRequest(channelId: ChannelIdentity) =>

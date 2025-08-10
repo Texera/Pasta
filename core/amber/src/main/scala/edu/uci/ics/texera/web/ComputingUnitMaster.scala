@@ -63,14 +63,16 @@ object ComputingUnitMaster {
       workflowContext: WorkflowContext,
       physicalPlan: PhysicalPlan,
       conf: ControllerConfig,
-      errorHandler: Throwable => Unit
+      errorHandler: Throwable => Unit,
+      schedulingMethod: String = "ALL_MAT"
   ): AmberClient = {
     new AmberClient(
       AmberRuntime.actorSystem,
       workflowContext,
       physicalPlan,
       conf,
-      errorHandler
+      errorHandler,
+      schedulingMethod
     )
   }
 
