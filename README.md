@@ -49,9 +49,49 @@ The workflows and their input files of this goal can be found in
 /pasta_experiment_inputs/mat_size_experiment_workflows.zip
 ```
 
-Extract this file in the same directory.
+Extract this file in the same directory. There are two executable Texera workflows for this experiment.
 
-This step requires running Texera.
+This step requires running Texera. Once you have set up a dev Texera environment (including Community features) and have Texera running locally, follow these additional steps to run experiments for each workflow:
+
+- In "Your Work" -> "Datasets", Create a new dataset for the workflow.
+
+<img width="204" height="107" alt="image" src="https://github.com/user-attachments/assets/d78404e2-bc95-4b7c-898e-9017d1467980" />
+
+- Navigate to the newly-created dataset, and upload the input file to this data set. Click "Submit" in the end and leave the dataset version to be the default.
+<img width="935" height="682" alt="image" src="https://github.com/user-attachments/assets/f102a2aa-0b61-4357-988f-a7d5e4f542da" />
+
+- In "Your Work" -> "Workflows", upload the workflow JSON to Texera
+<img width="421" height="159" alt="image" src="https://github.com/user-attachments/assets/1150f5f5-5725-42eb-8b87-f81b5ab8da9b" />
+
+- Open the uploaded workflow:
+<img width="2552" height="1283" alt="image" src="https://github.com/user-attachments/assets/8dfbb0aa-d39f-4e84-a1a6-463fd5e36ce6" />
+
+- Click the "CSV File Scan" operator and replace its "File" property with you uploaded file (click "Reselect File" and choose from the newly created dataset)
+<img width="967" height="394" alt="image" src="https://github.com/user-attachments/assets/416eea5e-9c77-41a1-96d8-de8b1357ccd2" />
+
+- Again on "CSV File Scan" operator operator, change the "Limit" to be the desired input data size (e.g., 1000)
+
+- Hover on the "Run" button and input the execution name to be one of the following:
+```
+ALL_MAT
+BASELINE
+TOP_DOWN_GLOBAL
+BOTTOM_UP_GLOBAL
+TOP_DOWN_GREEDY
+BOTTOM_UP_GREEDY
+```
+The execution name is used to indicate to the scheduler which method to use.
+
+<img width="211" height="169" alt="image" src="https://github.com/user-attachments/assets/376cdffb-c0d0-4413-9d1a-04c12f5aa2ec" />
+
+- Click on "Run" to execute the workflow.
+
+- Note: Before running any experiment, always run "ALL_MAT" once and let the execution finish so that there is some past statistics to be used by the scheduler for calculating costs.
+
+- The details of the scheduling performance will be output as a console log, and the totol wall-clock runtime of this workflow can be viewed on the frontend: <img width="236" height="38" alt="image" src="https://github.com/user-attachments/assets/73c29582-d465-4a07-b33a-cf4f1291b37f" />
+
+- When testing different input file sizes, it is recommended to create a new workflow for each input size so that their respective cost information can be measured accurately.
+
 
 ## Acknowledgements
 
