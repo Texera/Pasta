@@ -136,7 +136,7 @@ class DefaultCostEstimator(
             .eq(wid.toInt)
             .and(WORKFLOW_EXECUTIONS.STATUS.eq(3.toByte))
         )
-        .orderBy(WORKFLOW_EXECUTIONS.STARTING_TIME.desc())
+        .orderBy(WORKFLOW_EXECUTIONS.STARTING_TIME.asc()) // latest stat might be empty, using the earliest instead
         .limit(1)
         .fetchOneInto(classOf[String])
     }
