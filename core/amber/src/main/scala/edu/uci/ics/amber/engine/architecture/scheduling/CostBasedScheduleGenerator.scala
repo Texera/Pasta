@@ -22,7 +22,14 @@ package edu.uci.ics.amber.engine.architecture.scheduling
 import edu.uci.ics.amber.core.storage.VFSURIFactory.createResultURI
 import edu.uci.ics.amber.core.virtualidentity.{ActorVirtualIdentity, PhysicalOpIdentity}
 import edu.uci.ics.amber.core.workflow.WorkflowParser.renderInputPhysicalPlanToFile
-import edu.uci.ics.amber.core.workflow._
+import edu.uci.ics.amber.core.workflow.{
+  GlobalPortIdentity,
+  PhysicalLink,
+  PhysicalOp,
+  PhysicalPlan,
+  WorkflowContext
+}
+import edu.uci.ics.amber.engine.architecture.scheduling.SchedulingUtils.replaceVertex
 import edu.uci.ics.amber.engine.architecture.scheduling.config.{
   IntermediateInputPortConfig,
   OutputPortConfig,
@@ -37,6 +44,8 @@ import org.jgrapht.util.SupplierUtil
 
 import java.net.URI
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import java.util.concurrent.TimeoutException
+import scala.collection.immutable.HashMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.control.Breaks.{break, breakable}
@@ -63,7 +72,22 @@ class CostBasedScheduleGenerator(
   )
 
   private val costEstimator =
-    new DefaultCostEstimator(workflowContext = workflowContext, actorId = actorId)
+    new DefaultCostEstimator(
+      workflowContext = workflowContext,
+      resourceAllocator = resourceAllocator,
+      actorId = actorId
+    )
+
+  private case class CostEstimatorMemoKey(
+      physicalOpIds: Set[PhysicalOpIdentity],
+      physicalLinkIds: Set[PhysicalLink],
+      portIds: Set[GlobalPortIdentity],
+      resourceConfig: Option[ResourceConfig]
+  )
+
+  private val costEstimatorMemoization
+      : mutable.Map[CostEstimatorMemoKey, (ResourceConfig, Double)] =
+    new mutable.HashMap()
 
   def getNaiveSchedulability(): Boolean = {
     println("Analyzing schedulability")
@@ -316,10 +340,6 @@ class CostBasedScheduleGenerator(
     * @return A region DAG.
     */
   private def createRegionDAG(): DirectedAcyclicGraph[Region, RegionLink] = {
-    renderInputPhysicalPlanToFile(
-      physicalPlan = physicalPlan,
-      imageOutputPath = "/Users/xzliu/Downloads/" + workflowContext.workflowId.id + ".png"
-    )
     println(s"numOperators: ${physicalPlan.operators.size}, numLinks: ${physicalPlan.links.size}")
 
     val searchResult = schedulingMethod match {
@@ -336,7 +356,6 @@ class CostBasedScheduleGenerator(
     )
 
     val regionDAG = searchResult.regionDAG
-    allocateResource(regionDAG)
     regionDAG
   }
 
@@ -348,9 +367,7 @@ class CostBasedScheduleGenerator(
       state = allNonMaterializedLinks.diff(physicalPlan.getBlockingAndDependeeLinks),
       regionDAG = tryConnectRegionDAG(allNonMaterializedLinks) match {
         case Left(regionDAG) => {
-          cost = evaluate(
-            RegionPlan(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
-          )
+          cost = allocateResourcesAndEvaluateCost(regionDAG)
           regionDAG
         }
         case Right(_) =>
@@ -385,9 +402,7 @@ class CostBasedScheduleGenerator(
         SearchResult(
           state = currentRegionPlan.diff(physicalPlan.getBlockingAndDependeeLinks),
           regionDAG = regionDAG,
-          cost = evaluate(
-            RegionPlan(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
-          ),
+          cost = allocateResourcesAndEvaluateCost(regionDAG),
           searchTimeNanoSeconds = searchTime
         )
       case Right(_) => throw new Exception("Baseline method should return a region DAG.")
@@ -471,10 +486,7 @@ class CostBasedScheduleGenerator(
       def updateOptimumIfApplicable(regionDAG: DirectedAcyclicGraph[Region, RegionLink]): Unit = {
         if (oEarlyStop) schedulableStates.add(currentState)
         // Calculate the current state's cost and update the bestResult if it's lower
-        val cost =
-          evaluate(
-            RegionPlan(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
-          )
+        val cost = allocateResourcesAndEvaluateCost(regionDAG)
         if (cost < bestResult.cost) {
           bestResult = SearchResult(currentState, regionDAG, cost)
         }
@@ -537,12 +549,7 @@ class CostBasedScheduleGenerator(
                 physicalPlan.getBlockingAndDependeeLinks ++ neighborState
               ) match {
                 case Left(regionDAG) =>
-                  evaluate(
-                    RegionPlan(
-                      regionDAG.vertexSet().asScala.toSet,
-                      regionDAG.edgeSet().asScala.toSet
-                    )
-                  )
+                  allocateResourcesAndEvaluateCost(regionDAG)
                 case Right(_) =>
                   Double.MaxValue
               }
@@ -680,10 +687,7 @@ class CostBasedScheduleGenerator(
         */
       def updateOptimumIfApplicable(regionDAG: DirectedAcyclicGraph[Region, RegionLink]): Unit = {
         // Calculate the current state's cost and update the bestResult if it's lower
-        val cost =
-          evaluate(
-            RegionPlan(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
-          )
+        val cost = allocateResourcesAndEvaluateCost(regionDAG)
         if (cost < bestResult.cost) {
           bestResult = SearchResult(currentState, regionDAG, cost)
         }
@@ -719,12 +723,7 @@ class CostBasedScheduleGenerator(
                 physicalPlan.getBlockingAndDependeeLinks ++ neighborState
               ) match {
                 case Left(regionDAG) =>
-                  evaluate(
-                    RegionPlan(
-                      regionDAG.vertexSet().asScala.toSet,
-                      regionDAG.edgeSet().asScala.toSet
-                    )
-                  )
+                  allocateResourcesAndEvaluateCost(regionDAG)
                 case Right(_) =>
                   Double.MaxValue
               }
@@ -743,18 +742,44 @@ class CostBasedScheduleGenerator(
   }
 
   /**
-    * The cost function used by the search. Takes a region plan, generates one or more (to be done in the future)
-    * schedules based on the region plan, and calculates the cost of the schedule(s) using Cost Estimator. Uses the cost
-    * of the best schedule (currently only considers one schedule) as the cost of the region plan.
+    * Takes a region DAG, generates one or more (to be done in the future) schedules based on the region DAG, allocates
+    * resources to each region in the region DAG, and calculates the cost of the schedule(s) using Cost Estimator. Uses
+    * the cost of the best schedule (currently only considers one schedule) as the cost of the region DAG.
     *
     * @return A cost determined by the cost estimator.
     */
-  private def evaluate(regionPlan: RegionPlan): Double = {
+  private def allocateResourcesAndEvaluateCost(
+      regionDAG: DirectedAcyclicGraph[Region, RegionLink]
+  ): Double = {
+    val regionPlan =
+      RegionPlan(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
     this.costFunction match {
       case "WALL_CLOCK_RUNTIME" =>
         val schedule = generateScheduleFromRegionPlan(regionPlan)
         // In the future we may allow multiple regions in a level and split the resources.
-        schedule.map(level => level.map(region => costEstimator.estimate(region, 1)).sum).sum
+        schedule
+      .map(level =>
+        level
+          .map(region => {
+            val costEstimatorMemoKey = CostEstimatorMemoKey(
+              physicalOpIds = region.physicalOps.map(_.id),
+              physicalLinkIds = region.physicalLinks,
+              portIds = region.ports,
+              resourceConfig = region.resourceConfig
+            )
+            val (resourceConfig, regionCost) = costEstimatorMemoization
+              .getOrElseUpdate(
+                costEstimatorMemoKey,
+                costEstimator.allocateResourcesAndEstimateCost(region, 1)
+              )
+            // Update the region in the regionDAG to be the new region with resources allocated.
+            val regionWithResourceConfig = region.copy(resourceConfig = Some(resourceConfig))
+            replaceVertex(regionDAG, region, regionWithResourceConfig)
+            regionCost
+          })
+          .sum
+      )
+      .sum
       case "MATERIALIZATION_SIZES" =>
         val regionLinks = regionPlan.regionLinks
         regionLinks.toList
