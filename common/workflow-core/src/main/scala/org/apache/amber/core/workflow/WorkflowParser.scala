@@ -1,11 +1,11 @@
-package edu.uci.ics.amber.core.workflow
+package org.apache.amber.core.workflow
 
 import com.mxgraph.layout.hierarchical.mxHierarchicalLayout
 import com.mxgraph.model.mxICell
 import com.mxgraph.util.{mxCellRenderer, mxConstants}
 import com.mxgraph.view.mxStylesheet
-import edu.uci.ics.amber.core.executor.OpExecWithCode
-import edu.uci.ics.amber.core.virtualidentity.{
+import org.apache.amber.core.executor.OpExecWithCode
+import org.apache.amber.core.virtualidentity.{
   ExecutionIdentity,
   OperatorIdentity,
   PhysicalOpIdentity,

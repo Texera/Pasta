@@ -1,9 +1,9 @@
-package edu.uci.ics.texera.workflow
+package org.apache.texera.workflow
 
-import edu.uci.ics.amber.core.workflow.WorkflowContext
-import edu.uci.ics.amber.core.workflow.WorkflowParser.{parseWorkflowFile, renderRegionPlanToFile}
-import edu.uci.ics.amber.engine.architecture.scheduling.CostBasedScheduleGenerator
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
+import org.apache.amber.core.workflow.WorkflowContext
+import org.apache.amber.core.workflow.WorkflowParser.{parseWorkflowFile, renderRegionPlanToFile}
+import org.apache.amber.engine.architecture.scheduling.CostBasedScheduleGenerator
+import org.apache.amber.engine.common.virtualidentity.util.CONTROLLER
 
 import java.io.BufferedWriter
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
