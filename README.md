@@ -16,7 +16,7 @@ The experiments in the paper were performed on a branch of Texera in July 2024. 
 The experiments will work with MacOS, Windows, or Linux, but a local environment (desktop or laptop) is needed to set up a Texera dev environment as you need to access Texera's frontend in a browser. A server environment is not recommended.
 
 Follow [https://github.com/apache/texera/wiki/Guide-for-Developers](https://github.com/Texera/Pasta/wiki/Guide-for-Setting-Up-Texera-Dev-Environment) to setup a dev environment for Texera and run the backend micro services in IntelliJ.
-```
+
 
 ## Running Experiments Related to Goal 1: Minimizing Total Sizes of Materialization
 
