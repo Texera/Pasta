@@ -13,7 +13,7 @@ The experiments in the paper were performed on a branch of Texera in July 2024. 
 
 ### OS Environment
 
-The experiments will work with MacOS, Windows, or Linux, but a local environment (desktop or laptop) is needed to set up a Texera dev environment as you need to access Texera's frontend in a browser. A server environment is not recommended.
+The experiments will work with MacOS, Windows, or Linux, but a local environment (desktop or laptop) is needed to set up a Texera dev environment as you will need to access Texera's frontend locally in a browser. A server environment is not recommended. Also some Linux distros may not be supported if they do not have [Pgroonga](https://pgroonga.github.io/install/) support.
 
 ### Setting up Pasta (Texera)
 
