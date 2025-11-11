@@ -140,8 +140,6 @@ export class JointGraphWrapper {
   private workflowEditorZoomSubject: Subject<number> = new Subject<number>();
   // event stream of restoring zoom / offset default of the jointJS paper
   private restorePaperOffsetSubject: Subject<void> = new Subject<void>();
-  // event stream to toggle the jointPaper grids on or off.
-  private jointPaperGridsToggleStream = new Subject<void>();
 
   // event stream of showing the breakpoint button of a link
   private jointLinkBreakpointShowStream = new Subject<linkIDType>();
@@ -587,16 +585,19 @@ export class JointGraphWrapper {
   }
 
   public autoLayoutJoint(): void {
-    joint.layout.DirectedGraph.layout(this.jointGraph, {
-      dagre: dagre,
-      graphlib: graphlib,
-      nodeSep: 100,
-      edgeSep: 150,
-      rankSep: 80,
-      ranker: "tight-tree",
-      rankDir: "LR",
-      resizeClusters: true,
-    });
+    joint.layout.DirectedGraph.layout(
+      [...this.jointGraph.getElements().filter(el => el.attributes.type !== "region"), ...this.jointGraph.getLinks()],
+      {
+        dagre: dagre,
+        graphlib: graphlib,
+        nodeSep: 100,
+        edgeSep: 150,
+        rankSep: 80,
+        ranker: "tight-tree",
+        rankDir: "LR",
+        resizeClusters: true,
+      }
+    );
   }
 
   /**
@@ -882,20 +883,6 @@ export class JointGraphWrapper {
     }
 
     return JointGraphContext;
-  }
-
-  /**
-   * Returns an observable to indicate a toggle of grids has happened, and lets workflow editor to handle the state.
-   */
-  public getJointPaperGridsToggleStream(): Observable<void> {
-    return this.jointPaperGridsToggleStream.asObservable();
-  }
-
-  /**
-   * Triggers a toggle of whether to show grids in jointPaper.
-   */
-  public toggleGrids() {
-    this.jointPaperGridsToggleStream.next();
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
