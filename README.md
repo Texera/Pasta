@@ -3,9 +3,9 @@
 
 This repo contains the source code and data for Pasta ([SIGMOD'25 Paper](https://dl.acm.org/doi/10.1145/3698832)).
 
-<img src="core/gui/src/assets/logos/full_logo_small.png" alt="texera-logo" width="25px" height="50px"/> Pasta is built on top of Apache Texera (Incubating), a collaborative data analytics workflow system.
+<img src="frontend/src/assets/logos/full_logo_small.png" alt="texera-logo" width="25px" height="50px"/> Pasta is built on top of Apache Texera (Incubating), a collaborative data analytics workflow system.
 
-The experiments in the paper were performed on a branch of Texera in July 2024. Since then the Pasta scheduler has been fully integrated into Texera's master and we have moved the additional source code related to running Pasta's experiments to this repo (forked from Texera on August 2025).
+The experiments in the paper were performed on a branch of Texera in July 2024. Since then the Pasta scheduler has been fully integrated into Texera's master and we have moved the additional source code related to running Pasta's experiments to this repo (forked from Texera on Nov 2025).
 
 # Running Experiments
 
@@ -14,7 +14,7 @@ The experiments in the paper were performed on a branch of Texera in July 2024. 
 Follow https://github.com/apache/texera/wiki/Guide-for-Developers to setup a dev environment for Texera and run the backend micro services in IntelliJ. For the step of "Clone and Configure Texera", use this link instead:
 
 ```
-git clone git@github.com:Texera/pasta.git
+git clone https://github.com/Texera/Pasta
 ```
 
 ## Running Experiments Related to Goal 1: Minimizing Total Sizes of Materialization
@@ -22,7 +22,7 @@ git clone git@github.com:Texera/pasta.git
 All the workflows we used for analyses and running experiments on the optimization goal of minimizing total sizes of materialization are in the following file:
 
 ```
-/pasta_experiment_inputs/wallclock_runtime_experiment_workflows.zip
+/pasta_experiment_inputs/mat_size_experiment_workflows.zip
 ```
 
 Extract this file in the same directory. It contains ~6K real-world workflows as Texera workflow source files. Note the workflows are only used for analysis and simulating scheduling optimization on the goal of reducing materialzation sizes, and will not be executable in Texera.
@@ -46,7 +46,7 @@ Execute `PastaMatSizeOptimizationExperimentRunner` in Intellij and provide 3 CLI
 The workflows and their input files of this goal can be found in 
 
 ```
-/pasta_experiment_inputs/mat_size_experiment_workflows.zip
+/pasta_experiment_inputs/wallclock_runtime_experiment_workflows.zip
 ```
 
 Extract this file in the same directory. There are two executable Texera workflows for this experiment.
