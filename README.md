@@ -94,6 +94,11 @@ The execution name is used to indicate to the scheduler which method to use.
 
 - The details of the scheduling performance will be output as a console log, and the totol wall-clock runtime of this workflow can be viewed on the frontend: <img width="236" height="38" alt="image" src="https://github.com/user-attachments/assets/73c29582-d465-4a07-b33a-cf4f1291b37f" />
 
+The console log will be from `ComputingUnitMaster` and look like the following:
+```
+[WARN] [CONTROLLER] [CostBasedScheduleGenerator] [Amber-akka.actor.default-dispatcher-15] - WID: WorkflowIdentity(236), EID: ExecutionIdentity(1637), Scheduling method: BOTTOM_UP_GLOBAL, Cost of schedule: 70.510048792, scheduler ran for: 580.087292
+```
+
 - When testing different input file sizes, it is recommended to create a new workflow for each input size so that their respective cost information can be measured accurately.
 
 
