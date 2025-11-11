@@ -115,7 +115,7 @@ class Controller(
 
   override def initState(): Unit = {
     attachRuntimeServicesToCPState()
-    cp.workflowScheduler.updateSchedule(physicalPlan)
+    cp.workflowScheduler.updateSchedule(physicalPlan, schedulingMethod)
 
     val regions: List[(Long, List[String])] =
       cp.workflowScheduler.getSchedule.getRegions.map { region =>
@@ -126,7 +126,6 @@ class Controller(
       state.send(RegionUpdateEvent(regions))
     }
 
-    cp.workflowScheduler.updateSchedule(physicalPlan, schedulingMethod)
     val controllerRestoreConf = controllerConfig.stateRestoreConfOpt
     if (controllerRestoreConf.isDefined) {
       globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
