@@ -11,10 +11,11 @@ The experiments in the paper were performed on a branch of Texera in July 2024. 
 
 ## Setting up Texera
 
-Follow https://github.com/apache/texera/wiki/Guide-for-Developers to setup a dev environment for Texera and run the backend micro services in IntelliJ. For the step of "Clone and Configure Texera", use this link instead:
+### OS Environment
 
-```
-git clone https://github.com/Texera/Pasta
+The experiments will work with MacOS, Windows, or Linux, but a local environment (desktop or laptop) is needed to set up a Texera dev environment as you need to access Texera's frontend in a browser. A server environment is not recommended.
+
+Follow [https://github.com/apache/texera/wiki/Guide-for-Developers](https://github.com/Texera/Pasta/wiki/Guide-for-Setting-Up-Texera-Dev-Environment) to setup a dev environment for Texera and run the backend micro services in IntelliJ.
 ```
 
 ## Running Experiments Related to Goal 1: Minimizing Total Sizes of Materialization
@@ -30,7 +31,7 @@ Extract this file in the same directory. It contains ~6K real-world workflows as
 To run a complete set of experiments for Goal 1, navigate to this file in Intellij:
 
 ```
-core/amber/src/main/scala/edu/uci/ics/texera/workflow/PastaMatSizeOptimizationExperimentRunner.scala
+amber/src/main/scala/apache/texera/workflow/PastaMatSizeOptimizationExperimentRunner.scala
 ```
 
 Execute `PastaMatSizeOptimizationExperimentRunner` in Intellij and provide 3 CLI arguments to this binary:
