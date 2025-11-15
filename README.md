@@ -75,7 +75,11 @@ This step requires running Texera. Once you have set up a dev Texera environment
 
 - Again on "CSV File Scan" operator operator, change the "Limit" to be the desired input data size (e.g., 1000)
 
-- Hover on the "Run" button and input the execution name to be one of the following:
+- Click "Connect" on the top-right of the canvas and click "+ Computing Unit", and in the pop-up window, click "Create".
+
+<img width="636" height="88" alt="image" src="https://github.com/user-attachments/assets/e43c79dd-a87e-4450-9bdf-433bfd23fed1" />
+
+- The "+Connect" button on the top-right should become a blue "Run" button now. Hover on the button and input the execution name to be one of the following:
 ```
 ALL_MAT
 BASELINE
